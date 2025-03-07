@@ -33,7 +33,7 @@ const HeroSection = () => {
           loop
           muted
           playsInline
-          poster="./src/components/header.png"
+          poster="src/components/header.png"
         >
           <source
             src="https://player.vimeo.com/external/384761655.sd.mp4?s=383ab4dbc773cd0d5ece3af208d8f963368f67e4&profile_id=164&oauth2_token_id=57447761"
