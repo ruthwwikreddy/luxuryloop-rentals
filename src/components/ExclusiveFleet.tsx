@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Heart, Share2 } from "lucide-react";
+import { Calendar, MapPin, Heart, Share2, ArrowRight } from "lucide-react";
 
 const luxuryCars = [
   {
