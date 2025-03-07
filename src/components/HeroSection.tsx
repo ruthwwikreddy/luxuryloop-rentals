@@ -28,7 +28,7 @@ const HeroSection = () => {
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-t from-luxury-black via-luxury-black/80 to-transparent z-10"></div>
         <video
-          className="w-full h-full object-cover filter blur-[8px]" /* Added blur-[8px] which equates to roughly 30% blur */
+          className="w-full h-full object-cover filter blur-[15px]" /* Added blur-[8px] which equates to roughly 30% blur */
           autoPlay
           loop
           muted
