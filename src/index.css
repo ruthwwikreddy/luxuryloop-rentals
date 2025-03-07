@@ -98,6 +98,23 @@
   .btn-outline-luxury {
     @apply px-6 py-3 rounded-md border border-luxury-gold bg-transparent text-luxury-gold font-medium transition-all duration-300 hover:bg-luxury-gold/10 focus:outline-none;
   }
+  
+  /* New UI components */
+  .hover-scale {
+    @apply transition-transform duration-300 hover:scale-105;
+  }
+  
+  .hover-lift {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-lg;
+  }
+  
+  .text-shadow-gold {
+    text-shadow: 0 0 10px rgba(212, 175, 55, 0.7);
+  }
+  
+  .input-luxury {
+    @apply w-full px-4 py-3 bg-luxury-darkgray/50 border border-luxury-gold/30 rounded-md text-white focus:outline-none focus:border-luxury-gold focus:ring-1 focus:ring-luxury-gold/50 transition-all duration-300;
+  }
 }
 
 @layer utilities {
@@ -112,4 +129,32 @@
   .font-playfair {
     font-family: 'Playfair Display', serif;
   }
+  
+  .animate-shine {
+    background-size: 400% auto;
+    animation: shine 3s linear infinite;
+  }
+  
+  @keyframes shine {
+    0% { background-position: 200% center; }
+    100% { background-position: -200% center; }
+  }
+}
+
+/* Improved scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d4af37;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #ffd700;
 }

@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin } from "lucide-react";
+import { Calendar, MapPin, Heart, Share2 } from "lucide-react";
 
 const luxuryCars = [
   {
@@ -44,6 +44,15 @@ const luxuryCars = [
 
 const ExclusiveFleet = () => {
   const [hoveredCar, setHoveredCar] = useState<number | null>(null);
+  const [favorites, setFavorites] = useState<number[]>([]);
+  
+  const toggleFavorite = (id: number) => {
+    if (favorites.includes(id)) {
+      setFavorites(favorites.filter(carId => carId !== id));
+    } else {
+      setFavorites([...favorites, id]);
+    }
+  };
   
   return (
     <section id="exclusive-fleet" className="py-20 bg-luxury-black">
@@ -59,7 +68,7 @@ const ExclusiveFleet = () => {
           {luxuryCars.map((car) => (
             <div 
               key={car.id}
-              className="glass-card rounded-lg overflow-hidden gold-border transition-all duration-500 ease-in-out"
+              className="glass-card rounded-lg overflow-hidden gold-border transition-all duration-500 ease-in-out hover:gold-glow transform hover:-translate-y-2"
               onMouseEnter={() => setHoveredCar(car.id)}
               onMouseLeave={() => setHoveredCar(null)}
             >
@@ -76,6 +85,19 @@ const ExclusiveFleet = () => {
                 <div className="absolute top-4 left-4 bg-luxury-gold text-black px-3 py-1 rounded-full text-sm font-medium">
                   {car.category}
                 </div>
+                <div className="absolute top-4 right-4 flex space-x-2">
+                  <button 
+                    className="bg-luxury-black/50 hover:bg-luxury-black p-2 rounded-full transition-colors duration-300"
+                    onClick={() => toggleFavorite(car.id)}
+                  >
+                    <Heart 
+                      className={`h-5 w-5 ${favorites.includes(car.id) ? 'text-red-500 fill-red-500' : 'text-white'}`} 
+                    />
+                  </button>
+                  <button className="bg-luxury-black/50 hover:bg-luxury-black p-2 rounded-full transition-colors duration-300">
+                    <Share2 className="h-5 w-5 text-white" />
+                  </button>
+                </div>
               </div>
 
               <div className="p-6">
@@ -91,10 +113,10 @@ const ExclusiveFleet = () => {
                   </div>
                 </div>
 
-                <div className="mb-4">
+                <div className="mb-6">
                   <ul className="flex flex-wrap gap-2">
                     {car.specs.map((spec, index) => (
-                      <li key={index} className="text-white/70 text-sm bg-luxury-gold/10 px-3 py-1 rounded-full">
+                      <li key={index} className="text-white/70 text-sm bg-luxury-gold/10 px-3 py-1 rounded-full hover:bg-luxury-gold/20 transition-colors">
                         {spec}
                       </li>
                     ))}
@@ -106,8 +128,9 @@ const ExclusiveFleet = () => {
                     <span className="text-2xl font-bold gold-gradient-text">₹{car.price.toLocaleString()}</span>
                     <span className="text-white/70 ml-1">{car.perDay ? '/day' : ''}</span>
                   </div>
-                  <Button className="btn-luxury">
+                  <Button className="btn-luxury group">
                     Book Now
+                    <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </div>
               </div>
@@ -116,7 +139,7 @@ const ExclusiveFleet = () => {
         </div>
 
         <div className="mt-12 text-center">
-          <Button variant="outline" className="btn-outline-luxury">
+          <Button variant="outline" className="btn-outline-luxury hover-lift">
             View All Vehicles
           </Button>
         </div>
