@@ -2,49 +2,15 @@
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Calendar, MapPin, Heart, Share2, ArrowRight } from "lucide-react";
-
-const luxuryCars = [
-  {
-    id: 1,
-    name: "Lamborghini Aventador",
-    category: "Supercar",
-    price: 50000,
-    perDay: true,
-    image: "https://images.unsplash.com/photo-1544829099-b9a0c07fad1a?q=80&w=1770&auto=format&fit=crop",
-    specs: ["700+ HP", "0-100 km/h: 2.9s", "Top Speed: 350 km/h"]
-  },
-  {
-    id: 2,
-    name: "Rolls-Royce Phantom",
-    category: "Luxury Sedan",
-    price: 35000,
-    perDay: true,
-    image: "https://images.unsplash.com/photo-1631295387882-d88acfaa7473?q=80&w=1770&auto=format&fit=crop",
-    specs: ["V12 Engine", "Handcrafted Interior", "Starlight Headliner"]
-  },
-  {
-    id: 3,
-    name: "Ferrari 488 Spider",
-    category: "Convertible",
-    price: 45000,
-    perDay: true,
-    image: "https://images.unsplash.com/photo-1583121274602-3e2820c69888?q=80&w=1770&auto=format&fit=crop",
-    specs: ["670 HP", "0-100 km/h: 3.0s", "Twin-Turbo V8"]
-  },
-  {
-    id: 4,
-    name: "Bentley Continental GT",
-    category: "Grand Tourer",
-    price: 30000,
-    perDay: true,
-    image: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1770&auto=format&fit=crop",
-    specs: ["W12 Engine", "Hand-stitched Leather", "All-Wheel Drive"]
-  }
-];
+import { luxuryCars } from "@/types/car";
+import { Link } from "react-router-dom";
 
 const ExclusiveFleet = () => {
   const [hoveredCar, setHoveredCar] = useState<number | null>(null);
   const [favorites, setFavorites] = useState<number[]>([]);
+  
+  // Display only the first 4 cars on the homepage
+  const featuredCars = luxuryCars.slice(0, 4);
   
   const toggleFavorite = (id: number) => {
     if (favorites.includes(id)) {
@@ -65,7 +31,7 @@ const ExclusiveFleet = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8">
-          {luxuryCars.map((car) => (
+          {featuredCars.map((car) => (
             <div 
               key={car.id}
               className="glass-card rounded-lg overflow-hidden gold-border transition-all duration-500 ease-in-out hover:gold-glow transform hover:-translate-y-2"
@@ -128,10 +94,12 @@ const ExclusiveFleet = () => {
                     <span className="text-2xl font-bold gold-gradient-text">₹{car.price.toLocaleString()}</span>
                     <span className="text-white/70 ml-1">{car.perDay ? '/day' : ''}</span>
                   </div>
-                  <Button className="btn-luxury group">
-                    Book Now
-                    <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                  </Button>
+                  <Link to={`/car/${car.id}`}>
+                    <Button className="btn-luxury group">
+                      Book Now
+                      <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -139,9 +107,11 @@ const ExclusiveFleet = () => {
         </div>
 
         <div className="mt-12 text-center">
-          <Button variant="outline" className="btn-outline-luxury hover-lift">
-            View All Vehicles
-          </Button>
+          <Link to="/fleet">
+            <Button variant="outline" className="btn-outline-luxury hover-lift">
+              View All Vehicles
+            </Button>
+          </Link>
         </div>
       </div>
     </section>

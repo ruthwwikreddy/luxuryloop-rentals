@@ -1,25 +1,22 @@
 
-import NavBar from "@/components/NavBar";
+import Layout from "@/components/Layout";
 import HeroSection from "@/components/HeroSection";
 import WhyChooseUs from "@/components/WhyChooseUs";
 import ExclusiveFleet from "@/components/ExclusiveFleet";
 import BookingProcess from "@/components/BookingProcess";
 import PartnerSection from "@/components/PartnerSection";
 import ContactSection from "@/components/ContactSection";
-import Footer from "@/components/Footer";
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-luxury-black text-white overflow-x-hidden">
-      <NavBar />
+    <Layout>
       <HeroSection />
       <WhyChooseUs />
       <ExclusiveFleet />
       <BookingProcess />
       <PartnerSection />
       <ContactSection />
-      <Footer />
-    </div>
+    </Layout>
   );
 };
 
