@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Car, Menu, X } from "lucide-react";
+import { Car, Menu, X, Lock } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const NavBar = () => {
@@ -35,9 +35,12 @@ const NavBar = () => {
         </nav>
 
         <div className="hidden md:flex items-center space-x-4">
-          <Button className="btn-luxury animate-pulse-glow">
-            List Your Car
-          </Button>
+          <Link to="/admin-login">
+            <Button variant="outline" className="btn-outline-luxury">
+              <Lock className="h-4 w-4 mr-2" />
+              Admin
+            </Button>
+          </Link>
         </div>
 
         {/* Mobile menu button */}
@@ -99,11 +102,13 @@ const NavBar = () => {
             >
               Terms & Conditions
             </Link>
-            <div className="flex flex-col space-y-3 pt-2">
-              <Button className="w-full btn-luxury">
-                List Your Car
-              </Button>
-            </div>
+            <Link 
+              to="/admin-login" 
+              className="text-white hover:text-luxury-gold py-2 transition-colors border-b border-luxury-gold/20"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Admin Access
+            </Link>
           </div>
         </div>
       )}
