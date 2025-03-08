@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Car, User, Menu, X } from "lucide-react";
+import { Car, Menu, X } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const NavBar = () => {
@@ -28,18 +28,15 @@ const NavBar = () => {
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center space-x-8">
           <Link to="/fleet" className="text-white hover:text-luxury-gold transition-colors">Our Fleet</Link>
+          <Link to="/renters" className="text-white hover:text-luxury-gold transition-colors">Car Renters</Link>
           <Link to="/about" className="text-white hover:text-luxury-gold transition-colors">About Us</Link>
           <a href="/#why-choose-us" className="text-white hover:text-luxury-gold transition-colors">Why Choose Us</a>
           <a href="/#booking" className="text-white hover:text-luxury-gold transition-colors">Booking</a>
         </nav>
 
         <div className="hidden md:flex items-center space-x-4">
-          <Button variant="outline" className="btn-outline-luxury">
-            <User className="h-4 w-4 mr-2" />
-            Log In
-          </Button>
           <Button className="btn-luxury animate-pulse-glow">
-            Join Now
+            List Your Car
           </Button>
         </div>
 
@@ -66,6 +63,13 @@ const NavBar = () => {
               onClick={() => setMobileMenuOpen(false)}
             >
               Our Fleet
+            </Link>
+            <Link 
+              to="/renters" 
+              className="text-white hover:text-luxury-gold py-2 transition-colors border-b border-luxury-gold/20"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Car Renters
             </Link>
             <Link 
               to="/about" 
@@ -96,12 +100,8 @@ const NavBar = () => {
               Terms & Conditions
             </Link>
             <div className="flex flex-col space-y-3 pt-2">
-              <Button variant="outline" className="w-full btn-outline-luxury">
-                <User className="h-4 w-4 mr-2" />
-                Log In
-              </Button>
               <Button className="w-full btn-luxury">
-                Join Now
+                List Your Car
               </Button>
             </div>
           </div>

@@ -1,5 +1,9 @@
 
-import { CircleCheck, CarFront, Shield, Calendar } from "lucide-react";
+import { CircleCheck, CarFront, Shield, Calendar, Search } from "lucide-react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 
 const steps = [
   {
@@ -20,6 +24,46 @@ const steps = [
 ];
 
 const BookingProcess = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [searchParams, setSearchParams] = useState({
+    date: "",
+    category: ""
+  });
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setSearchParams({
+      ...searchParams,
+      [name]: value
+    });
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!searchParams.date) {
+      toast({
+        variant: "destructive",
+        title: "Date is required",
+        description: "Please select a date for your rental."
+      });
+      return;
+    }
+    
+    // Navigate to fleet page with query parameters
+    const queryParams = new URLSearchParams();
+    if (searchParams.date) queryParams.set("date", searchParams.date);
+    if (searchParams.category) queryParams.set("category", searchParams.category);
+    
+    navigate(`/fleet?${queryParams.toString()}`);
+    
+    toast({
+      title: "Searching available cars",
+      description: "Showing cars available on your selected date."
+    });
+  };
+
   return (
     <section id="booking" className="py-20 bg-luxury-darkgray">
       <div className="luxury-container">
@@ -65,26 +109,39 @@ const BookingProcess = () => {
             Ready to experience luxury on the road? Book your dream car now and elevate your journey.
           </p>
           <div className="glass-card p-8 rounded-lg gold-border inline-block">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+            <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
               <div className="relative">
                 <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-luxury-gold" />
                 <input
                   type="date"
+                  name="date"
+                  value={searchParams.date}
+                  onChange={handleInputChange}
                   className="w-full pl-10 pr-4 py-3 bg-luxury-black border border-luxury-gold/30 rounded-md text-white focus:outline-none focus:border-luxury-gold"
                   placeholder="Select Date"
                 />
               </div>
               <div>
-                <select className="w-full px-4 py-3 bg-luxury-black border border-luxury-gold/30 rounded-md text-white focus:outline-none focus:border-luxury-gold appearance-none">
+                <select 
+                  name="category"
+                  value={searchParams.category}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 bg-luxury-black border border-luxury-gold/30 rounded-md text-white focus:outline-none focus:border-luxury-gold appearance-none"
+                >
                   <option value="">Select Car Category</option>
-                  <option value="supercar">Supercar</option>
-                  <option value="luxury">Luxury Sedan</option>
-                  <option value="suv">Luxury SUV</option>
-                  <option value="convertible">Convertible</option>
+                  <option value="Supercar">Supercar</option>
+                  <option value="Luxury Sedan">Luxury Sedan</option>
+                  <option value="Luxury SUV">Luxury SUV</option>
+                  <option value="Convertible">Convertible</option>
+                  <option value="Sports Car">Sports Car</option>
+                  <option value="Grand Tourer">Grand Tourer</option>
                 </select>
               </div>
-              <button className="btn-luxury w-full">Search Availability</button>
-            </div>
+              <button type="submit" className="btn-luxury w-full flex items-center justify-center gap-2">
+                <Search className="h-4 w-4" />
+                Search Availability
+              </button>
+            </form>
           </div>
         </div>
       </div>

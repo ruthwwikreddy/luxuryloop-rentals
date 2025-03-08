@@ -2,8 +2,10 @@
 import { Button } from "@/components/ui/button";
 import { Mail, Phone, Send } from "lucide-react";
 import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 const ContactSection = () => {
+  const { toast } = useToast();
   const [formState, setFormState] = useState({
     name: "",
     email: "",
@@ -23,12 +25,28 @@ const ContactSection = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate form
+    if (!formState.name || !formState.email || !formState.inquiryType || !formState.message) {
+      toast({
+        variant: "destructive",
+        title: "Form incomplete",
+        description: "Please fill in all required fields before submitting."
+      });
+      return;
+    }
+    
     setIsSubmitting(true);
     
     // Simulate form submission
     setTimeout(() => {
       setIsSubmitting(false);
       setFormSuccess(true);
+      toast({
+        title: "Message sent successfully",
+        description: "We'll get back to you as soon as possible."
+      });
+      
       setFormState({
         name: "",
         email: "",
@@ -44,7 +62,7 @@ const ContactSection = () => {
   };
 
   return (
-    <section className="py-20 bg-luxury-darkgray relative overflow-hidden">
+    <section id="contact" className="py-20 bg-luxury-darkgray relative overflow-hidden">
       <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=1770&auto=format&fit=crop')] bg-cover bg-center opacity-10"></div>
       
       <div className="luxury-container relative z-10">
@@ -88,10 +106,29 @@ const ContactSection = () => {
               </div>
 
               <div className="space-x-4">
-                <Button variant="outline" className="btn-outline-luxury hover-lift">
+                <Button 
+                  variant="outline" 
+                  className="btn-outline-luxury hover-lift"
+                  onClick={() => {
+                    setFormState({
+                      ...formState,
+                      inquiryType: "investor"
+                    });
+                    document.getElementById("inquiry-type")?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                >
                   Investor Relations
                 </Button>
-                <Button className="btn-luxury hover-scale">
+                <Button 
+                  className="btn-luxury hover-scale"
+                  onClick={() => {
+                    window.open("https://calendly.com/luxuryloop/call", "_blank");
+                    toast({
+                      title: "Opening scheduler",
+                      description: "You're being redirected to our scheduling page."
+                    });
+                  }}
+                >
                   Schedule a Call
                 </Button>
               </div>
@@ -132,6 +169,7 @@ const ContactSection = () => {
                   </div>
                   <div>
                     <select 
+                      id="inquiry-type"
                       name="inquiryType"
                       value={formState.inquiryType}
                       onChange={handleInputChange}
