@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Lock, User } from "lucide-react";
 import Layout from "@/components/Layout";
+import { supabase } from "@/lib/supabase";
 
 const AdminLogin = () => {
   const [username, setUsername] = useState("");
@@ -14,30 +15,51 @@ const AdminLogin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simple authentication check
-    if (username === "admin" && password === "admin") {
-      // Set admin authentication in localStorage
-      localStorage.setItem("adminAuthenticated", "true");
-      
-      toast({
-        title: "Login successful",
-        description: "Welcome to the admin dashboard"
-      });
-      
-      navigate("/admin");
-    } else {
+    try {
+      // Query the admin_users table
+      const { data, error } = await supabase
+        .from('admin_users')
+        .select('*')
+        .eq('username', username)
+        .eq('password', password)
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      if (data) {
+        // Set admin authentication in localStorage with admin id
+        localStorage.setItem("adminAuthenticated", "true");
+        localStorage.setItem("adminId", data.id.toString());
+        
+        toast({
+          title: "Login successful",
+          description: "Welcome to the admin dashboard"
+        });
+        
+        navigate("/admin");
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Authentication failed",
+          description: "Invalid username or password"
+        });
+      }
+    } catch (error) {
+      console.error("Login error:", error);
       toast({
         variant: "destructive",
         title: "Authentication failed",
         description: "Invalid username or password"
       });
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   return (
@@ -87,7 +109,7 @@ const AdminLogin = () => {
               </Button>
               
               <div className="text-white/70 text-center text-sm mt-4">
-                <p>Admin credentials:</p>
+                <p>Default admin credentials:</p>
                 <p>Username: admin</p>
                 <p>Password: admin</p>
                 <p className="italic text-white/50 text-xs mt-1">(For demonstration purposes only)</p>

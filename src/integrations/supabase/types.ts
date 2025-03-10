@@ -9,7 +9,139 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      admin_users: {
+        Row: {
+          id: number
+          password: string
+          username: string
+        }
+        Insert: {
+          id?: number
+          password: string
+          username: string
+        }
+        Update: {
+          id?: number
+          password?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      available_dates: {
+        Row: {
+          car_id: number | null
+          date: string
+          id: number
+        }
+        Insert: {
+          car_id?: number | null
+          date: string
+          id?: number
+        }
+        Update: {
+          car_id?: number | null
+          date?: string
+          id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "available_dates_car_id_fkey"
+            columns: ["car_id"]
+            isOneToOne: false
+            referencedRelation: "cars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bookings: {
+        Row: {
+          car_id: number | null
+          car_name: string
+          created_at: string | null
+          customer_email: string
+          customer_name: string
+          customer_phone: string
+          end_date: string
+          id: number
+          start_date: string
+          status: string
+        }
+        Insert: {
+          car_id?: number | null
+          car_name: string
+          created_at?: string | null
+          customer_email: string
+          customer_name: string
+          customer_phone: string
+          end_date: string
+          id?: number
+          start_date: string
+          status: string
+        }
+        Update: {
+          car_id?: number | null
+          car_name?: string
+          created_at?: string | null
+          customer_email?: string
+          customer_name?: string
+          customer_phone?: string
+          end_date?: string
+          id?: number
+          start_date?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_car_id_fkey"
+            columns: ["car_id"]
+            isOneToOne: false
+            referencedRelation: "cars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cars: {
+        Row: {
+          category: string
+          description: string | null
+          features: string[] | null
+          id: number
+          image: string
+          images: string[] | null
+          locations: string[] | null
+          name: string
+          per_day: boolean
+          price: number
+          specs: string[]
+        }
+        Insert: {
+          category: string
+          description?: string | null
+          features?: string[] | null
+          id?: number
+          image: string
+          images?: string[] | null
+          locations?: string[] | null
+          name: string
+          per_day?: boolean
+          price: number
+          specs?: string[]
+        }
+        Update: {
+          category?: string
+          description?: string | null
+          features?: string[] | null
+          id?: number
+          image?: string
+          images?: string[] | null
+          locations?: string[] | null
+          name?: string
+          per_day?: boolean
+          price?: number
+          specs?: string[]
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

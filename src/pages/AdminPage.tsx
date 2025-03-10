@@ -1,11 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CarType, luxuryCars } from "@/types/car";
 import { useToast } from "@/hooks/use-toast";
 import { Calendar } from "@/components/ui/calendar";
 import AuthGuard from "@/components/AuthGuard";
+import { useCars } from "@/hooks/use-cars";
+import { useBookings } from "@/hooks/use-bookings";
+import { useAvailability } from "@/hooks/use-availability";
+import { CarType } from "@/types/supabase";
 import {
   Car,
   Upload,
@@ -21,78 +24,19 @@ import {
   PenLine
 } from "lucide-react";
 
-// Mock booking request data
-interface BookingRequest {
-  id: number;
-  carId: number;
-  carName: string;
-  customerName: string;
-  customerEmail: string;
-  customerPhone: string;
-  startDate: Date;
-  endDate: Date;
-  status: "pending" | "approved" | "rejected";
-  createdAt: Date;
-}
-
-const mockBookingRequests: BookingRequest[] = [
-  {
-    id: 1,
-    carId: 1,
-    carName: "Lamborghini Aventador",
-    customerName: "Raj Patel",
-    customerEmail: "raj.patel@example.com",
-    customerPhone: "+91 98765 43210",
-    startDate: new Date(Date.now() + 86400000 * 2), // 2 days from now
-    endDate: new Date(Date.now() + 86400000 * 5), // 5 days from now
-    status: "pending",
-    createdAt: new Date(Date.now() - 86400000) // 1 day ago
-  },
-  {
-    id: 2,
-    carId: 3,
-    carName: "Ferrari 488 Spider",
-    customerName: "Priya Sharma",
-    customerEmail: "priya.sharma@example.com",
-    customerPhone: "+91 87654 32109",
-    startDate: new Date(Date.now() + 86400000 * 7), // 7 days from now
-    endDate: new Date(Date.now() + 86400000 * 10), // 10 days from now
-    status: "approved",
-    createdAt: new Date(Date.now() - 86400000 * 2) // 2 days ago
-  },
-  {
-    id: 3,
-    carId: 5,
-    carName: "Aston Martin DBS",
-    customerName: "Vikram Singh",
-    customerEmail: "vikram.singh@example.com",
-    customerPhone: "+91 76543 21098",
-    startDate: new Date(Date.now() + 86400000 * 14), // 14 days from now
-    endDate: new Date(Date.now() + 86400000 * 16), // 16 days from now
-    status: "rejected",
-    createdAt: new Date(Date.now() - 86400000 * 3) // 3 days ago
-  }
-];
-
-// Car availability interface
-interface CarAvailability {
-  carId: number;
-  dates: Date[];
-}
-
 const AdminPage = () => {
   const { toast } = useToast();
-  const [cars, setCars] = useState<CarType[]>(luxuryCars);
-  const [bookings, setBookings] = useState<BookingRequest[]>(mockBookingRequests);
-  const [availabilities, setAvailabilities] = useState<CarAvailability[]>([]);
+  const { cars, loading: carsLoading, addCar, updateCar, deleteCar } = useCars();
+  const { bookings, loading: bookingsLoading, updateBookingStatus } = useBookings();
+  const { getAvailableDatesForCar, toggleDateAvailability } = useAvailability();
+  
   const [showForm, setShowForm] = useState(false);
   const [editingCar, setEditingCar] = useState<CarType | null>(null);
   const [newCar, setNewCar] = useState<Partial<CarType>>({
-    id: luxuryCars.length + 1,
     name: "",
     category: "",
     price: 0,
-    perDay: true,
+    per_day: true,
     image: "",
     images: [],
     specs: [],
@@ -107,35 +51,21 @@ const AdminPage = () => {
   const [location, setLocation] = useState("");
   const [imageUrl, setImageUrl] = useState("");
 
-  // Initialize availabilities from car data
-  useEffect(() => {
-    const initialAvailabilities: CarAvailability[] = cars.map(car => ({
-      carId: car.id,
-      dates: car.availableDates ? 
-        car.availableDates.map(dateStr => new Date(dateStr)) : 
-        // Default to next 30 days available
-        Array.from({ length: 30 }, (_, i) => new Date(Date.now() + 86400000 * (i + 1)))
-    }));
-    
-    setAvailabilities(initialAvailabilities);
-  }, []);
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
     if (name === "price") {
       setNewCar({ ...newCar, [name]: Number(value) });
-    } else if (name === "perDay") {
+    } else if (name === "per_day") {
       setNewCar({ ...newCar, [name]: value === "true" });
     } else {
       setNewCar({ ...newCar, [name]: value });
     }
   };
 
-  // Functions for managing specs, features, locations, images
   const addSpec = () => {
     if (spec.trim() && newCar.specs) {
-      setNewCar({ ...newCar, specs: [...newCar.specs, spec.trim()] });
+      setNewCar({ ...newCar, specs: [...(newCar.specs || []), spec.trim()] });
       setSpec("");
     }
   };
@@ -203,23 +133,23 @@ const AdminPage = () => {
     setShowForm(true);
   };
 
-  const handleDeleteCar = (carId: number) => {
-    const updatedCars = cars.filter(car => car.id !== carId);
-    setCars(updatedCars);
+  const handleDeleteCar = async (carId: number) => {
+    const success = await deleteCar(carId);
     
-    toast({
-      title: "Car deleted",
-      description: "The car has been removed from the fleet"
-    });
+    if (success) {
+      toast({
+        title: "Car deleted",
+        description: "The car has been removed from the fleet"
+      });
+    }
   };
 
   const resetForm = () => {
     setNewCar({
-      id: cars.length + 1,
       name: "",
       category: "",
       price: 0,
-      perDay: true,
+      per_day: true,
       image: "",
       images: [],
       specs: [],
@@ -231,10 +161,9 @@ const AdminPage = () => {
     setShowForm(false);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate required fields
     if (!newCar.name || !newCar.category || !newCar.price || !newCar.image || !newCar.specs?.length) {
       toast({
         variant: "destructive",
@@ -244,92 +173,65 @@ const AdminPage = () => {
       return;
     }
     
-    // If no main image is set, use the first image from the gallery
     if (!newCar.image && newCar.images && newCar.images.length > 0) {
       newCar.image = newCar.images[0];
     }
     
-    if (editingCar) {
-      // Update existing car
-      const updatedCars = cars.map(car => 
-        car.id === editingCar.id ? newCar as CarType : car
-      );
-      setCars(updatedCars);
-      
+    try {
+      if (editingCar && editingCar.id) {
+        const updatedCar = await updateCar(editingCar.id, newCar);
+        
+        if (updatedCar) {
+          toast({
+            title: "Car updated",
+            description: `${newCar.name} has been updated`
+          });
+          resetForm();
+        }
+      } else {
+        const carToAdd = newCar as Omit<CarType, 'id'>;
+        const addedCar = await addCar(carToAdd);
+        
+        if (addedCar) {
+          toast({
+            title: "Car added successfully",
+            description: `${newCar.name} has been added to the fleet`
+          });
+          resetForm();
+        }
+      }
+    } catch (error) {
+      console.error("Error saving car:", error);
       toast({
-        title: "Car updated",
-        description: `${newCar.name} has been updated`
-      });
-    } else {
-      // Add new car to the list
-      const updatedCars = [...cars, newCar as CarType];
-      setCars(updatedCars);
-      
-      toast({
-        title: "Car added successfully",
-        description: `${newCar.name} has been added to the fleet`
+        variant: "destructive",
+        title: "Error saving car",
+        description: "An error occurred while saving the car"
       });
     }
-    
-    // Reset form
-    resetForm();
   };
 
-  const handleBookingStatusChange = (bookingId: number, newStatus: "pending" | "approved" | "rejected") => {
-    const updatedBookings = bookings.map(booking => 
-      booking.id === bookingId ? {...booking, status: newStatus} : booking
-    );
+  const handleBookingStatusChange = async (bookingId: number, newStatus: "pending" | "approved" | "rejected") => {
+    const updatedBooking = await updateBookingStatus(bookingId, newStatus);
     
-    setBookings(updatedBookings);
-    
-    toast({
-      title: `Booking ${newStatus}`,
-      description: `Booking #${bookingId} has been ${newStatus}`
-    });
+    if (updatedBooking) {
+      toast({
+        title: `Booking ${newStatus}`,
+        description: `Booking #${bookingId} has been ${newStatus}`
+      });
+    }
   };
 
-  const handleDateSelect = (date: Date | undefined) => {
+  const handleDateSelect = async (date: Date | undefined) => {
     if (!date || !selectedCarId) return;
     
-    // Find the availability entry for this car
-    const carAvailabilityIndex = availabilities.findIndex(a => a.carId === selectedCarId);
+    const success = await toggleDateAvailability(selectedCarId, date);
     
-    if (carAvailabilityIndex >= 0) {
-      const carAvailability = availabilities[carAvailabilityIndex];
-      
-      // Check if date is already in the array
-      const dateExists = carAvailability.dates.some(d => 
-        d.getFullYear() === date.getFullYear() && 
-        d.getMonth() === date.getMonth() && 
-        d.getDate() === date.getDate()
-      );
-      
-      let newDates;
-      if (dateExists) {
-        // Remove the date
-        newDates = carAvailability.dates.filter(d => 
-          !(d.getFullYear() === date.getFullYear() && 
-            d.getMonth() === date.getMonth() && 
-            d.getDate() === date.getDate())
-        );
-      } else {
-        // Add the date
-        newDates = [...carAvailability.dates, new Date(date)];
-      }
-      
-      // Update the availability
-      const newAvailabilities = [...availabilities];
-      newAvailabilities[carAvailabilityIndex] = {
-        ...carAvailability,
-        dates: newDates
-      };
-      
-      setAvailabilities(newAvailabilities);
-      setSelectedDates(newDates);
+    if (success) {
+      setSelectedDates(getAvailableDatesForCar(selectedCarId));
       
       toast({
-        title: dateExists ? "Date removed" : "Date added",
-        description: `${date.toLocaleDateString()} has been ${dateExists ? 'removed from' : 'added to'} the availability`
+        title: "Availability updated",
+        description: `Date availability has been updated for this car`
       });
     }
   };
@@ -337,17 +239,13 @@ const AdminPage = () => {
   const handleSelectCar = (carId: number) => {
     setSelectedCarId(carId);
     
-    // Find dates for this car
-    const carAvailability = availabilities.find(a => a.carId === carId);
-    if (carAvailability) {
-      setSelectedDates(carAvailability.dates);
-    } else {
-      setSelectedDates([]);
-    }
+    const carDates = getAvailableDatesForCar(carId);
+    setSelectedDates(carDates);
   };
 
   const handleLogout = () => {
     localStorage.removeItem("adminAuthenticated");
+    localStorage.removeItem("adminId");
     window.location.href = "/admin-login";
   };
 
@@ -440,8 +338,8 @@ const AdminPage = () => {
                         <div>
                           <label className="block text-white mb-2">Pricing Type</label>
                           <select
-                            name="perDay"
-                            value={newCar.perDay?.toString()}
+                            name="per_day"
+                            value={newCar.per_day?.toString()}
                             onChange={handleInputChange}
                             className="input-luxury w-full appearance-none"
                           >
@@ -707,150 +605,170 @@ const AdminPage = () => {
               <TabsContent value="fleet">
                 <div className="glass-card p-6 rounded-lg">
                   <h2 className="font-playfair text-2xl text-white mb-6">Fleet Management</h2>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-luxury-gold/20">
-                          <th className="text-left py-3 px-4 text-luxury-gold">ID</th>
-                          <th className="text-left py-3 px-4 text-luxury-gold">Image</th>
-                          <th className="text-left py-3 px-4 text-luxury-gold">Name</th>
-                          <th className="text-left py-3 px-4 text-luxury-gold">Category</th>
-                          <th className="text-left py-3 px-4 text-luxury-gold">Price</th>
-                          <th className="text-left py-3 px-4 text-luxury-gold">Locations</th>
-                          <th className="text-right py-3 px-4 text-luxury-gold">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {cars.map((car) => (
-                          <tr key={car.id} className="border-b border-luxury-gold/10 hover:bg-luxury-gold/5">
-                            <td className="py-3 px-4 text-white">{car.id}</td>
-                            <td className="py-3 px-4">
-                              <div className="w-16 h-12 rounded overflow-hidden">
-                                <img 
-                                  src={car.image} 
-                                  alt={car.name} 
-                                  className="w-full h-full object-cover"
-                                  onError={(e) => {
-                                    e.currentTarget.src = "https://via.placeholder.com/400x300?text=No+Image";
-                                  }}
-                                />
-                              </div>
-                            </td>
-                            <td className="py-3 px-4 text-white">{car.name}</td>
-                            <td className="py-3 px-4 text-white/70">{car.category}</td>
-                            <td className="py-3 px-4">
-                              <span className="gold-gradient-text font-bold">₹{car.price.toLocaleString()}</span>
-                              <span className="text-white/50 text-sm ml-1">{car.perDay ? '/day' : ''}</span>
-                            </td>
-                            <td className="py-3 px-4 text-white/70">
-                              {car.locations?.join(", ") || "Multiple Locations"}
-                            </td>
-                            <td className="py-3 px-4 text-right">
-                              <div className="flex justify-end space-x-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="bg-luxury-gold/10 border-luxury-gold/30 hover:bg-luxury-gold/20"
-                                  onClick={() => handleEditCar(car)}
-                                >
-                                  <PenLine className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="bg-red-500/10 border-red-500/30 hover:bg-red-500/20 text-red-400"
-                                  onClick={() => handleDeleteCar(car.id)}
-                                >
-                                  <Trash className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </td>
+                  {carsLoading ? (
+                    <div className="text-center py-8">
+                      <p className="text-white">Loading cars...</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-luxury-gold/20">
+                            <th className="text-left py-3 px-4 text-luxury-gold">ID</th>
+                            <th className="text-left py-3 px-4 text-luxury-gold">Image</th>
+                            <th className="text-left py-3 px-4 text-luxury-gold">Name</th>
+                            <th className="text-left py-3 px-4 text-luxury-gold">Category</th>
+                            <th className="text-left py-3 px-4 text-luxury-gold">Price</th>
+                            <th className="text-left py-3 px-4 text-luxury-gold">Locations</th>
+                            <th className="text-right py-3 px-4 text-luxury-gold">Actions</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody>
+                          {cars.map((car) => (
+                            <tr key={car.id} className="border-b border-luxury-gold/10 hover:bg-luxury-gold/5">
+                              <td className="py-3 px-4 text-white">{car.id}</td>
+                              <td className="py-3 px-4">
+                                <div className="w-16 h-12 rounded overflow-hidden">
+                                  <img 
+                                    src={car.image} 
+                                    alt={car.name} 
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      e.currentTarget.src = "https://via.placeholder.com/400x300?text=No+Image";
+                                    }}
+                                  />
+                                </div>
+                              </td>
+                              <td className="py-3 px-4 text-white">{car.name}</td>
+                              <td className="py-3 px-4 text-white/70">{car.category}</td>
+                              <td className="py-3 px-4">
+                                <span className="gold-gradient-text font-bold">₹{car.price.toLocaleString()}</span>
+                                <span className="text-white/50 text-sm ml-1">{car.per_day ? '/day' : ''}</span>
+                              </td>
+                              <td className="py-3 px-4 text-white/70">
+                                {car.locations?.join(", ") || "Multiple Locations"}
+                              </td>
+                              <td className="py-3 px-4 text-right">
+                                <div className="flex justify-end space-x-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="bg-luxury-gold/10 border-luxury-gold/30 hover:bg-luxury-gold/20"
+                                    onClick={() => handleEditCar(car)}
+                                  >
+                                    <PenLine className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="bg-red-500/10 border-red-500/30 hover:bg-red-500/20 text-red-400"
+                                    onClick={() => handleDeleteCar(car.id)}
+                                  >
+                                    <Trash className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               </TabsContent>
               
               <TabsContent value="bookings">
                 <div className="glass-card p-6 rounded-lg">
                   <h2 className="font-playfair text-2xl text-white mb-6">Booking Requests</h2>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-luxury-gold/20">
-                          <th className="text-left py-3 px-4 text-luxury-gold">ID</th>
-                          <th className="text-left py-3 px-4 text-luxury-gold">Car</th>
-                          <th className="text-left py-3 px-4 text-luxury-gold">Customer</th>
-                          <th className="text-left py-3 px-4 text-luxury-gold">Contact</th>
-                          <th className="text-left py-3 px-4 text-luxury-gold">Dates</th>
-                          <th className="text-left py-3 px-4 text-luxury-gold">Status</th>
-                          <th className="text-right py-3 px-4 text-luxury-gold">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {bookings.map((booking) => (
-                          <tr key={booking.id} className="border-b border-luxury-gold/10 hover:bg-luxury-gold/5">
-                            <td className="py-3 px-4 text-white">{booking.id}</td>
-                            <td className="py-3 px-4 text-white">{booking.carName}</td>
-                            <td className="py-3 px-4 text-white">{booking.customerName}</td>
-                            <td className="py-3 px-4 text-white/70">
-                              <div>{booking.customerEmail}</div>
-                              <div>{booking.customerPhone}</div>
-                            </td>
-                            <td className="py-3 px-4 text-white/70">
-                              <div>{booking.startDate.toLocaleDateString()}</div>
-                              <div>to {booking.endDate.toLocaleDateString()}</div>
-                            </td>
-                            <td className="py-3 px-4">
-                              <span className={`px-2 py-1 rounded text-sm ${
-                                booking.status === 'approved' ? 'bg-green-500/20 text-green-400' :
-                                booking.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
-                                'bg-yellow-500/20 text-yellow-400'
-                              }`}>
-                                {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-                              </span>
-                            </td>
-                            <td className="py-3 px-4 text-right">
-                              <div className="flex justify-end space-x-2">
-                                {booking.status !== 'approved' && (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="bg-green-500/10 border-green-500/30 hover:bg-green-500/20 text-green-400"
-                                    onClick={() => handleBookingStatusChange(booking.id, 'approved')}
-                                  >
-                                    Approve
-                                  </Button>
-                                )}
-                                {booking.status !== 'rejected' && (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="bg-red-500/10 border-red-500/30 hover:bg-red-500/20 text-red-400"
-                                    onClick={() => handleBookingStatusChange(booking.id, 'rejected')}
-                                  >
-                                    Reject
-                                  </Button>
-                                )}
-                                {booking.status !== 'pending' && (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="bg-yellow-500/10 border-yellow-500/30 hover:bg-yellow-500/20 text-yellow-400"
-                                    onClick={() => handleBookingStatusChange(booking.id, 'pending')}
-                                  >
-                                    Pending
-                                  </Button>
-                                )}
-                              </div>
-                            </td>
+                  {bookingsLoading ? (
+                    <div className="text-center py-8">
+                      <p className="text-white">Loading bookings...</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-luxury-gold/20">
+                            <th className="text-left py-3 px-4 text-luxury-gold">ID</th>
+                            <th className="text-left py-3 px-4 text-luxury-gold">Car</th>
+                            <th className="text-left py-3 px-4 text-luxury-gold">Customer</th>
+                            <th className="text-left py-3 px-4 text-luxury-gold">Contact</th>
+                            <th className="text-left py-3 px-4 text-luxury-gold">Dates</th>
+                            <th className="text-left py-3 px-4 text-luxury-gold">Status</th>
+                            <th className="text-right py-3 px-4 text-luxury-gold">Actions</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody>
+                          {bookings.length === 0 ? (
+                            <tr>
+                              <td colSpan={7} className="text-center py-8 text-white/70">
+                                No booking requests yet
+                              </td>
+                            </tr>
+                          ) : (
+                            bookings.map((booking) => (
+                              <tr key={booking.id} className="border-b border-luxury-gold/10 hover:bg-luxury-gold/5">
+                                <td className="py-3 px-4 text-white">{booking.id}</td>
+                                <td className="py-3 px-4 text-white">{booking.car_name}</td>
+                                <td className="py-3 px-4 text-white">{booking.customer_name}</td>
+                                <td className="py-3 px-4 text-white/70">
+                                  <div>{booking.customer_email}</div>
+                                  <div>{booking.customer_phone}</div>
+                                </td>
+                                <td className="py-3 px-4 text-white/70">
+                                  <div>{new Date(booking.start_date).toLocaleDateString()}</div>
+                                  <div>to {new Date(booking.end_date).toLocaleDateString()}</div>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <span className={`px-2 py-1 rounded text-sm ${
+                                    booking.status === 'approved' ? 'bg-green-500/20 text-green-400' :
+                                    booking.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
+                                    'bg-yellow-500/20 text-yellow-400'
+                                  }`}>
+                                    {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-4 text-right">
+                                  <div className="flex justify-end space-x-2">
+                                    {booking.status !== 'approved' && (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="bg-green-500/10 border-green-500/30 hover:bg-green-500/20 text-green-400"
+                                        onClick={() => handleBookingStatusChange(booking.id, 'approved')}
+                                      >
+                                        Approve
+                                      </Button>
+                                    )}
+                                    {booking.status !== 'rejected' && (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="bg-red-500/10 border-red-500/30 hover:bg-red-500/20 text-red-400"
+                                        onClick={() => handleBookingStatusChange(booking.id, 'rejected')}
+                                      >
+                                        Reject
+                                      </Button>
+                                    )}
+                                    {booking.status !== 'pending' && (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="bg-yellow-500/10 border-yellow-500/30 hover:bg-yellow-500/20 text-yellow-400"
+                                        onClick={() => handleBookingStatusChange(booking.id, 'pending')}
+                                      >
+                                        Pending
+                                      </Button>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               </TabsContent>
               
@@ -862,30 +780,34 @@ const AdminPage = () => {
                     <div className="lg:col-span-1">
                       <h3 className="text-xl text-white mb-4">Select Car</h3>
                       <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
-                        {cars.map((car) => (
-                          <div 
-                            key={car.id}
-                            className={`flex items-center border ${selectedCarId === car.id ? 
-                              'border-luxury-gold bg-luxury-gold/10' : 'border-white/10'} 
-                              rounded-md p-3 cursor-pointer hover:bg-luxury-gold/5 transition-colors`}
-                            onClick={() => handleSelectCar(car.id)}
-                          >
-                            <div className="w-12 h-10 rounded overflow-hidden mr-3">
-                              <img 
-                                src={car.image} 
-                                alt={car.name} 
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  e.currentTarget.src = "https://via.placeholder.com/400x300?text=No+Image";
-                                }}
-                              />
+                        {carsLoading ? (
+                          <p className="text-white">Loading cars...</p>
+                        ) : (
+                          cars.map((car) => (
+                            <div 
+                              key={car.id}
+                              className={`flex items-center border ${selectedCarId === car.id ? 
+                                'border-luxury-gold bg-luxury-gold/10' : 'border-white/10'} 
+                                rounded-md p-3 cursor-pointer hover:bg-luxury-gold/5 transition-colors`}
+                              onClick={() => handleSelectCar(car.id)}
+                            >
+                              <div className="w-12 h-10 rounded overflow-hidden mr-3">
+                                <img 
+                                  src={car.image} 
+                                  alt={car.name} 
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.currentTarget.src = "https://via.placeholder.com/400x300?text=No+Image";
+                                  }}
+                                />
+                              </div>
+                              <div>
+                                <h4 className="text-white font-medium">{car.name}</h4>
+                                <p className="text-white/70 text-sm">{car.category}</p>
+                              </div>
                             </div>
-                            <div>
-                              <h4 className="text-white font-medium">{car.name}</h4>
-                              <p className="text-white/70 text-sm">{car.category}</p>
-                            </div>
-                          </div>
-                        ))}
+                          ))
+                        )}
                       </div>
                     </div>
                     

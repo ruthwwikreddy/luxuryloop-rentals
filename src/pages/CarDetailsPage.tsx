@@ -2,33 +2,101 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import Layout from "@/components/Layout";
-import { luxuryCars } from "@/types/car";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Calendar, MapPin, Heart, Share2, Shield, ChevronRight, CircleCheck } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase";
+import { CarType } from "@/types/supabase";
 
 const CarDetailsPage = () => {
   const { id } = useParams();
-  const [car, setCar] = useState(luxuryCars.find(car => car.id === Number(id)));
+  const [car, setCar] = useState<CarType | null>(null);
+  const [availableDates, setAvailableDates] = useState<Date[]>([]);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isBooking, setIsBooking] = useState(false);
   const [pickupDate, setPickupDate] = useState("");
   const [returnDate, setReturnDate] = useState("");
   const [isFavorite, setIsFavorite] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
   
   useEffect(() => {
     // Scroll to top when component mounts
     window.scrollTo(0, 0);
     
-    // Find the car based on the ID from the URL
-    const foundCar = luxuryCars.find(car => car.id === Number(id));
-    setCar(foundCar);
+    fetchCarDetails();
     
-    if (!foundCar) {
-      // Redirect to 404 page if car not found
-      window.location.href = "/not-found";
-    }
+    // Subscribe to real-time changes for the car
+    const carChannel = supabase
+      .channel('car-updates')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cars', filter: `id=eq.${id}` }, () => {
+        fetchCarDetails();
+      })
+      .subscribe();
+      
+    // Subscribe to real-time changes for available dates
+    const availabilityChannel = supabase
+      .channel('availability-updates')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'available_dates', filter: `car_id=eq.${id}` }, () => {
+        fetchAvailableDates();
+      })
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(carChannel);
+      supabase.removeChannel(availabilityChannel);
+    };
   }, [id]);
+  
+  const fetchCarDetails = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('cars')
+        .select('*')
+        .eq('id', id)
+        .single();
+        
+      if (error) {
+        throw error;
+      }
+      
+      if (data) {
+        setCar(data);
+        fetchAvailableDates();
+      } else {
+        // Redirect to 404 page if car not found
+        window.location.href = "/not-found";
+      }
+    } catch (error) {
+      console.error('Error fetching car details:', error);
+      toast({
+        variant: "destructive",
+        title: "Error loading car details",
+        description: "Please try again later."
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const fetchAvailableDates = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('available_dates')
+        .select('date')
+        .eq('car_id', id);
+        
+      if (error) {
+        throw error;
+      }
+      
+      const dates = data.map(item => new Date(item.date));
+      setAvailableDates(dates);
+    } catch (error) {
+      console.error('Error fetching available dates:', error);
+    }
+  };
   
   const toggleFavorite = () => {
     setIsFavorite(!isFavorite);
@@ -40,7 +108,7 @@ const CarDetailsPage = () => {
     }
   };
   
-  const handleBookNow = () => {
+  const handleBookNow = async () => {
     if (!pickupDate || !returnDate) {
       toast({
         variant: "destructive",
@@ -50,27 +118,88 @@ const CarDetailsPage = () => {
       return;
     }
     
-    toast({
-      title: "Booking initiated",
-      description: `Your booking for ${car?.name} is being processed.`,
-    });
+    // Check if selected dates are available
+    const startDate = new Date(pickupDate);
+    const endDate = new Date(returnDate);
     
-    // Here you would normally proceed to checkout or next step
+    if (startDate > endDate) {
+      toast({
+        variant: "destructive",
+        title: "Invalid date range",
+        description: "Return date must be after pickup date.",
+      });
+      return;
+    }
+    
+    // Simple validation of dates against available dates
+    const isAvailable = availableDates.some(date => 
+      date.toISOString().split('T')[0] === pickupDate ||
+      date.toISOString().split('T')[0] === returnDate
+    );
+    
+    if (!isAvailable) {
+      toast({
+        variant: "destructive",
+        title: "Date not available",
+        description: "Please select from available dates only.",
+      });
+      return;
+    }
+    
     setIsBooking(true);
-    setTimeout(() => {
+    
+    try {
+      // Create a booking
+      const { data, error } = await supabase
+        .from('bookings')
+        .insert([{
+          car_id: Number(id),
+          car_name: car?.name || '',
+          customer_name: 'Guest User', // In a real app, would be from a form or logged-in user
+          customer_email: 'guest@example.com', // In a real app, would be from a form or logged-in user 
+          customer_phone: '+1234567890', // In a real app, would be from a form
+          start_date: pickupDate,
+          end_date: returnDate,
+          status: 'pending'
+        }])
+        .select()
+        .single();
+        
+      if (error) {
+        throw error;
+      }
+      
       toast({
         title: "Booking successful!",
         description: "Check your email for booking details.",
       });
+    } catch (error) {
+      console.error('Error creating booking:', error);
+      toast({
+        variant: "destructive",
+        title: "Booking error",
+        description: "Could not process your booking. Please try again.",
+      });
+    } finally {
       setIsBooking(false);
-    }, 2000);
+    }
   };
+  
+  if (loading) {
+    return (
+      <Layout>
+        <div className="min-h-screen flex items-center justify-center">
+          <p className="text-white">Loading...</p>
+        </div>
+      </Layout>
+    );
+  }
   
   if (!car) {
     return (
       <Layout>
         <div className="min-h-screen flex items-center justify-center">
-          <p className="text-white">Loading...</p>
+          <p className="text-white">Car not found</p>
         </div>
       </Layout>
     );
@@ -239,7 +368,7 @@ const CarDetailsPage = () => {
                 <div className="mb-6 flex items-center">
                   <div>
                     <span className="text-3xl font-bold gold-gradient-text">₹{car.price.toLocaleString()}</span>
-                    <span className="text-white/70 ml-1">{car.perDay ? '/day' : ''}</span>
+                    <span className="text-white/70 ml-1">{car.per_day ? '/day' : ''}</span>
                   </div>
                   <div className="ml-auto">
                     <Shield className="h-5 w-5 text-luxury-gold" />
@@ -256,6 +385,7 @@ const CarDetailsPage = () => {
                         value={pickupDate}
                         onChange={(e) => setPickupDate(e.target.value)}
                         className="w-full pl-10 pr-4 py-3 bg-luxury-black/50 border border-luxury-gold/30 rounded-md text-white focus:outline-none focus:border-luxury-gold"
+                        min={new Date().toISOString().split('T')[0]}
                       />
                     </div>
                   </div>
@@ -269,6 +399,7 @@ const CarDetailsPage = () => {
                         value={returnDate}
                         onChange={(e) => setReturnDate(e.target.value)}
                         className="w-full pl-10 pr-4 py-3 bg-luxury-black/50 border border-luxury-gold/30 rounded-md text-white focus:outline-none focus:border-luxury-gold"
+                        min={pickupDate || new Date().toISOString().split('T')[0]}
                       />
                     </div>
                   </div>
