@@ -827,7 +827,30 @@ const AdminPage = () => {
                             <Calendar
                               mode="multiple"
                               selected={selectedDates}
-                              onSelect={(date) => handleDateSelect(date)}
+                              onSelect={(date) => {
+                                if (Array.isArray(date) && date.length > 0) {
+                                  const lastSelectedDate = date[date.length - 1];
+                                  const newDates = date.filter(
+                                    d => !selectedDates.some(
+                                      sd => sd.getTime() === d.getTime()
+                                    )
+                                  );
+                                  if (newDates.length > 0) {
+                                    handleDateSelect(newDates[0]);
+                                  } else {
+                                    const removedDates = selectedDates.filter(
+                                      sd => !date.some(
+                                        d => d.getTime() === sd.getTime()
+                                      )
+                                    );
+                                    if (removedDates.length > 0) {
+                                      handleDateSelect(removedDates[0]);
+                                    }
+                                  }
+                                } else if (date instanceof Date) {
+                                  handleDateSelect(date);
+                                }
+                              }}
                               className="bg-white border rounded-lg"
                               disabled={{
                                 before: new Date(),
