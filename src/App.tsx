@@ -14,13 +14,16 @@ import AdminLogin from "./pages/AdminLogin";
 import AboutPage from "./pages/AboutPage";
 import TermsPage from "./pages/TermsPage";
 import { useEffect } from "react";
-import { supabase } from "./lib/supabase";
+import { supabase, initializeAdminUser } from "./lib/supabase";
 
 const queryClient = new QueryClient();
 
 // Initialize the database with some seed data if needed
 const initializeDatabase = async () => {
   try {
+    // Initialize admin user
+    await initializeAdminUser();
+    
     // Check if we have any cars
     const { data: existingCars, error } = await supabase
       .from('cars')
