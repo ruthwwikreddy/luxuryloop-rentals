@@ -9,6 +9,8 @@ export const supabase = createClient(supabaseUrl, supabaseKey);
 // Helper function to initialize admin user
 export const initializeAdminUser = async () => {
   try {
+    console.log("Checking for existing admin user");
+    
     // Check if admin user exists
     const { data: existingAdmin, error: queryError } = await supabase
       .from('admin_users')
@@ -21,8 +23,12 @@ export const initializeAdminUser = async () => {
       return;
     }
     
+    console.log("Existing admin check result:", existingAdmin);
+    
     // If admin user doesn't exist, create it
     if (!existingAdmin) {
+      console.log("No admin user found, creating one");
+      
       const { data, error } = await supabase
         .from('admin_users')
         .insert([
@@ -37,8 +43,10 @@ export const initializeAdminUser = async () => {
       if (error) {
         console.error('Error creating admin user:', error);
       } else {
-        console.log('Admin user created successfully');
+        console.log('Admin user created successfully:', data);
       }
+    } else {
+      console.log("Admin user already exists");
     }
   } catch (error) {
     console.error('Admin initialization error:', error);

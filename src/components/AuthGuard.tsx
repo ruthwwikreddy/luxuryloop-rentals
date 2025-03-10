@@ -29,7 +29,8 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
       setIsChecking(false);
     };
     
-    checkAuth();
+    // Small timeout to prevent flash of unauthorized content
+    setTimeout(checkAuth, 100);
   }, [navigate, toast]);
   
   if (isChecking) {

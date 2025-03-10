@@ -19,12 +19,22 @@ const AdminLogin = () => {
   // Initialize admin user if it doesn't exist
   useEffect(() => {
     const init = async () => {
-      await initializeAdminUser();
-      setInitialized(true);
+      try {
+        await initializeAdminUser();
+        setInitialized(true);
+      } catch (error) {
+        console.error("Admin initialization failed:", error);
+        setInitialized(true); // Still set initialized to true so user can attempt login
+        toast({
+          variant: "destructive",
+          title: "Initialization error",
+          description: "There was an error setting up the admin account. Please try again."
+        });
+      }
     };
     
     init();
-  }, []);
+  }, [toast]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +80,7 @@ const AdminLogin = () => {
       toast({
         variant: "destructive",
         title: "Authentication failed",
-        description: "Invalid username or password or database error"
+        description: "An error occurred during authentication. Please try again."
       });
     } finally {
       setIsLoading(false);
