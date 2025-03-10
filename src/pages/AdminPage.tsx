@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
@@ -907,7 +906,7 @@ const AdminPage = () => {
                               mode="multiple"
                               selected={selectedDates}
                               onSelect={(date) => handleDateSelect(date)}
-                              className="bg-white border rounded-lg pointer-events-auto"
+                              className="bg-white border rounded-lg"
                               disabled={{
                                 before: new Date(),
                               }}
