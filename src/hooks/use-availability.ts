@@ -97,6 +97,8 @@ export const useAvailability = () => {
         }
       }
 
+      // Refresh availability data
+      await fetchAvailability();
       return true;
     } catch (error) {
       console.error('Error toggling date availability:', error);
@@ -113,10 +115,26 @@ export const useAvailability = () => {
     return availabilities[carId] || [];
   };
 
+  const isDateAvailable = (carId: number, date: string): boolean => {
+    if (!availabilities[carId]) return false;
+    
+    const dateStr = new Date(date).toISOString().split('T')[0];
+    return availabilities[carId].some(availDate => 
+      availDate.toISOString().split('T')[0] === dateStr
+    );
+  };
+
+  const getFormattedAvailableDates = (carId: number): string[] => {
+    if (!availabilities[carId]) return [];
+    return availabilities[carId].map(date => date.toISOString().split('T')[0]);
+  };
+
   return {
     availabilities,
     loading,
     toggleDateAvailability,
-    getAvailableDatesForCar
+    getAvailableDatesForCar,
+    isDateAvailable,
+    getFormattedAvailableDates
   };
 };

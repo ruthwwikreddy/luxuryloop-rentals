@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { CarType } from '@/types/supabase';
@@ -46,6 +47,30 @@ export const useCars = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCarById = async (id: number | string): Promise<CarType | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('cars')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error fetching car by ID:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error fetching car details',
+        description: 'Please try again later.',
+      });
+      return null;
     }
   };
 
@@ -162,6 +187,8 @@ export const useCars = () => {
   return {
     cars,
     loading,
+    fetchCars,
+    fetchCarById,
     addCar,
     updateCar,
     deleteCar

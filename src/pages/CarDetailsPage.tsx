@@ -5,98 +5,49 @@ import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Calendar, MapPin, Heart, Share2, Shield, ChevronRight, CircleCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/lib/supabase";
+import { useAvailability } from "@/hooks/use-availability";
+import { useCars } from "@/hooks/use-cars";
 import { CarType } from "@/types/supabase";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format } from "date-fns";
 
 const CarDetailsPage = () => {
   const { id } = useParams();
   const [car, setCar] = useState<CarType | null>(null);
-  const [availableDates, setAvailableDates] = useState<Date[]>([]);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isBooking, setIsBooking] = useState(false);
-  const [pickupDate, setPickupDate] = useState("");
-  const [returnDate, setReturnDate] = useState("");
+  const [pickupDate, setPickupDate] = useState<Date | undefined>(undefined);
+  const [returnDate, setReturnDate] = useState<Date | undefined>(undefined);
   const [isFavorite, setIsFavorite] = useState(false);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { fetchCarById } = useCars();
+  const { getAvailableDatesForCar, isDateAvailable } = useAvailability();
+  
+  const availableDates = id ? getAvailableDatesForCar(parseInt(id)) : [];
   
   useEffect(() => {
     // Scroll to top when component mounts
     window.scrollTo(0, 0);
     
-    fetchCarDetails();
-    
-    // Subscribe to real-time changes for the car
-    const carChannel = supabase
-      .channel('car-updates')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'cars', filter: `id=eq.${id}` }, () => {
-        fetchCarDetails();
-      })
-      .subscribe();
-      
-    // Subscribe to real-time changes for available dates
-    const availabilityChannel = supabase
-      .channel('availability-updates')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'available_dates', filter: `car_id=eq.${id}` }, () => {
-        fetchAvailableDates();
-      })
-      .subscribe();
-    
-    return () => {
-      supabase.removeChannel(carChannel);
-      supabase.removeChannel(availabilityChannel);
+    const fetchData = async () => {
+      if (id) {
+        setLoading(true);
+        const carData = await fetchCarById(id);
+        if (carData) {
+          setCar(carData);
+        } else {
+          // Redirect to 404 page if car not found
+          window.location.href = "/not-found";
+        }
+        setLoading(false);
+      }
     };
-  }, [id]);
-  
-  const fetchCarDetails = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('cars')
-        .select('*')
-        .eq('id', id)
-        .single();
-        
-      if (error) {
-        throw error;
-      }
-      
-      if (data) {
-        setCar(data);
-        fetchAvailableDates();
-      } else {
-        // Redirect to 404 page if car not found
-        window.location.href = "/not-found";
-      }
-    } catch (error) {
-      console.error('Error fetching car details:', error);
-      toast({
-        variant: "destructive",
-        title: "Error loading car details",
-        description: "Please try again later."
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const fetchAvailableDates = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('available_dates')
-        .select('date')
-        .eq('car_id', id);
-        
-      if (error) {
-        throw error;
-      }
-      
-      const dates = data.map(item => new Date(item.date));
-      setAvailableDates(dates);
-    } catch (error) {
-      console.error('Error fetching available dates:', error);
-    }
-  };
+    
+    fetchData();
+  }, [id, fetchCarById]);
   
   const toggleFavorite = () => {
     setIsFavorite(!isFavorite);
@@ -119,10 +70,7 @@ const CarDetailsPage = () => {
     }
     
     // Check if selected dates are available
-    const startDate = new Date(pickupDate);
-    const endDate = new Date(returnDate);
-    
-    if (startDate > endDate) {
+    if (pickupDate > returnDate) {
       toast({
         variant: "destructive",
         title: "Invalid date range",
@@ -131,17 +79,16 @@ const CarDetailsPage = () => {
       return;
     }
     
-    // Simple validation of dates against available dates
-    const isAvailable = availableDates.some(date => 
-      date.toISOString().split('T')[0] === pickupDate ||
-      date.toISOString().split('T')[0] === returnDate
-    );
+    // Format dates to string for checking availability
+    const pickupDateStr = pickupDate.toISOString().split('T')[0];
+    const returnDateStr = returnDate.toISOString().split('T')[0];
     
-    if (!isAvailable) {
+    // Check if the dates are available
+    if (id && (!isDateAvailable(parseInt(id), pickupDateStr) || !isDateAvailable(parseInt(id), returnDateStr))) {
       toast({
         variant: "destructive",
         title: "Date not available",
-        description: "Please select from available dates only.",
+        description: "One or both of your selected dates aren't available. Please select from available dates only.",
       });
       return;
     }
@@ -149,30 +96,30 @@ const CarDetailsPage = () => {
     setIsBooking(true);
     
     try {
-      // Create a booking
-      const { data, error } = await supabase
-        .from('bookings')
-        .insert([{
-          car_id: Number(id),
-          car_name: car?.name || '',
-          customer_name: 'Guest User', // In a real app, would be from a form or logged-in user
-          customer_email: 'guest@example.com', // In a real app, would be from a form or logged-in user 
-          customer_phone: '+1234567890', // In a real app, would be from a form
-          start_date: pickupDate,
-          end_date: returnDate,
-          status: 'pending'
-        }])
-        .select()
-        .single();
+      // Create a booking in Supabase
+      if (id && car) {
+        const { data, error } = await supabase
+          .from('bookings')
+          .insert([{
+            car_id: parseInt(id),
+            car_name: car.name,
+            customer_name: 'Guest User', 
+            customer_email: 'guest@example.com',
+            customer_phone: '+1234567890',
+            start_date: pickupDateStr,
+            end_date: returnDateStr,
+            status: 'pending'
+          }]);
+          
+        if (error) {
+          throw error;
+        }
         
-      if (error) {
-        throw error;
+        toast({
+          title: "Booking successful!",
+          description: "Check your email for booking details.",
+        });
       }
-      
-      toast({
-        title: "Booking successful!",
-        description: "Check your email for booking details.",
-      });
     } catch (error) {
       console.error('Error creating booking:', error);
       toast({
@@ -183,6 +130,12 @@ const CarDetailsPage = () => {
     } finally {
       setIsBooking(false);
     }
+  };
+  
+  const disabledDays = (date: Date) => {
+    if (!id) return true;
+    const dateStr = date.toISOString().split('T')[0];
+    return !isDateAvailable(parseInt(id), dateStr);
   };
   
   if (loading) {
@@ -352,6 +305,24 @@ const CarDetailsPage = () => {
                     </ul>
                   </div>
                 </div>
+                
+                {/* Available Dates */}
+                <div className="mt-6">
+                  <h3 className="text-luxury-gold text-lg mb-3">Available Dates</h3>
+                  <div className="bg-luxury-black/50 p-4 rounded-lg">
+                    {availableDates.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {availableDates.map((date, index) => (
+                          <span key={index} className="bg-luxury-gold/20 text-luxury-gold px-3 py-1 rounded-full text-sm">
+                            {format(date, 'MMMM d, yyyy')}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-white/70">No dates currently available. Please check back later or contact us.</p>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
             
@@ -378,30 +349,64 @@ const CarDetailsPage = () => {
                 <div className="space-y-4 mb-6">
                   <div>
                     <label className="block text-white mb-2">Pickup Date</label>
-                    <div className="relative">
-                      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-luxury-gold/70" />
-                      <input
-                        type="date"
-                        value={pickupDate}
-                        onChange={(e) => setPickupDate(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 bg-luxury-black/50 border border-luxury-gold/30 rounded-md text-white focus:outline-none focus:border-luxury-gold"
-                        min={new Date().toISOString().split('T')[0]}
-                      />
-                    </div>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full pl-3 text-left font-normal border-luxury-gold/30 bg-luxury-black/50 hover:bg-luxury-black/70",
+                            !pickupDate && "text-muted-foreground"
+                          )}
+                        >
+                          <Calendar className="mr-2 h-4 w-4 text-luxury-gold" />
+                          {pickupDate ? format(pickupDate, "MMMM d, yyyy") : <span>Select date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <CalendarComponent
+                          mode="single"
+                          selected={pickupDate}
+                          onSelect={setPickupDate}
+                          modifiers={{
+                            available: availableDates
+                          }}
+                          modifiersClassNames={{
+                            available: "border-2 border-luxury-gold text-luxury-gold hover:bg-luxury-gold/20"
+                          }}
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   
                   <div>
                     <label className="block text-white mb-2">Return Date</label>
-                    <div className="relative">
-                      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-luxury-gold/70" />
-                      <input
-                        type="date"
-                        value={returnDate}
-                        onChange={(e) => setReturnDate(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 bg-luxury-black/50 border border-luxury-gold/30 rounded-md text-white focus:outline-none focus:border-luxury-gold"
-                        min={pickupDate || new Date().toISOString().split('T')[0]}
-                      />
-                    </div>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full pl-3 text-left font-normal border-luxury-gold/30 bg-luxury-black/50 hover:bg-luxury-black/70",
+                            !returnDate && "text-muted-foreground"
+                          )}
+                        >
+                          <Calendar className="mr-2 h-4 w-4 text-luxury-gold" />
+                          {returnDate ? format(returnDate, "MMMM d, yyyy") : <span>Select date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <CalendarComponent
+                          mode="single"
+                          selected={returnDate}
+                          onSelect={setReturnDate}
+                          modifiers={{
+                            available: availableDates
+                          }}
+                          modifiersClassNames={{
+                            available: "border-2 border-luxury-gold text-luxury-gold hover:bg-luxury-gold/20"
+                          }}
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   
                   <div>
@@ -417,15 +422,15 @@ const CarDetailsPage = () => {
                 <Button 
                   className="btn-luxury w-full justify-center group"
                   onClick={handleBookNow}
-                  disabled={isBooking}
+                  disabled={isBooking || availableDates.length === 0}
                 >
-                  {isBooking ? "Processing..." : "Book Now"}
-                  {!isBooking && (
+                  {isBooking ? "Processing..." : (availableDates.length === 0 ? "No Available Dates" : "Book Now")}
+                  {!isBooking && availableDates.length > 0 && (
                     <ArrowLeft className="ml-2 h-5 w-5 rotate-180 group-hover:translate-x-1 transition-transform" />
                   )}
                 </Button>
                 
-                <p className="text-white/50 text-sm text-center mt-4">
+                <p className="text-white/70 text-sm text-center mt-4">
                   No payment charged yet. You'll pay when you pick up the car.
                 </p>
               </div>
