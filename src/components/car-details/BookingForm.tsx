@@ -1,15 +1,12 @@
 
 import { useState } from "react";
-import { Calendar, Shield, ArrowLeft } from "lucide-react";
+import { Shield, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { CarType } from "@/types/supabase";
 import { useAvailability } from "@/hooks/use-availability";
+import CalendarWithAvailability from "@/components/common/CalendarWithAvailability";
 
 interface BookingFormProps {
   car: CarType;
@@ -117,67 +114,20 @@ const BookingForm = ({ car, carId }: BookingFormProps) => {
         </div>
         
         <div className="space-y-4 mb-6">
-          <div>
-            <label className="block text-white mb-2">Pickup Date</label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full pl-3 text-left font-normal border-luxury-gold/30 bg-luxury-black/50 hover:bg-luxury-black/70",
-                    !pickupDate && "text-muted-foreground"
-                  )}
-                >
-                  <Calendar className="mr-2 h-4 w-4 text-luxury-gold" />
-                  {pickupDate ? format(pickupDate, "MMMM d, yyyy") : <span>Select date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <CalendarComponent
-                  mode="single"
-                  selected={pickupDate}
-                  onSelect={setPickupDate}
-                  modifiers={{
-                    available: availableDates
-                  }}
-                  modifiersClassNames={{
-                    available: "border-2 border-luxury-gold text-luxury-gold hover:bg-luxury-gold/20"
-                  }}
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
+          <CalendarWithAvailability
+            label="Pickup Date"
+            selectedDate={pickupDate}
+            onDateChange={setPickupDate}
+            availableDates={availableDates}
+          />
           
-          <div>
-            <label className="block text-white mb-2">Return Date</label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full pl-3 text-left font-normal border-luxury-gold/30 bg-luxury-black/50 hover:bg-luxury-black/70",
-                    !returnDate && "text-muted-foreground"
-                  )}
-                >
-                  <Calendar className="mr-2 h-4 w-4 text-luxury-gold" />
-                  {returnDate ? format(returnDate, "MMMM d, yyyy") : <span>Select date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <CalendarComponent
-                  mode="single"
-                  selected={returnDate}
-                  onSelect={setReturnDate}
-                  modifiers={{
-                    available: availableDates
-                  }}
-                  modifiersClassNames={{
-                    available: "border-2 border-luxury-gold text-luxury-gold hover:bg-luxury-gold/20"
-                  }}
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
+          <CalendarWithAvailability
+            label="Return Date"
+            selectedDate={returnDate}
+            onDateChange={setReturnDate}
+            availableDates={availableDates}
+            minDate={pickupDate}
+          />
           
           <div>
             <label className="block text-white mb-2">Pickup Location</label>
