@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from './use-toast';
@@ -48,6 +47,11 @@ export function useRenters() {
   // Add a new renter
   const addRenter = async (renter: Omit<RenterType, 'id' | 'created_at'>) => {
     try {
+      // Validate image URL if provided
+      if (renter.image && !isValidUrl(renter.image)) {
+        throw new Error('Invalid image URL');
+      }
+
       const { data, error } = await supabase
         .from('car_renters')
         .insert([renter])
@@ -59,13 +63,17 @@ export function useRenters() {
       }
       
       setRenters([...renters, data]);
+      toast({
+        title: 'Renter added successfully',
+        description: `${renter.name} has been added to the system`,
+      });
       return data;
     } catch (error) {
       console.error('Error adding renter:', error);
       toast({
         variant: 'destructive',
         title: 'Failed to add renter',
-        description: 'Please try again later',
+        description: error.message || 'Please try again later',
       });
       return null;
     }
@@ -74,6 +82,11 @@ export function useRenters() {
   // Update an existing renter
   const updateRenter = async (id: number, renter: Partial<RenterType>) => {
     try {
+      // Validate image URL if provided
+      if (renter.image && !isValidUrl(renter.image)) {
+        throw new Error('Invalid image URL');
+      }
+
       const { data, error } = await supabase
         .from('car_renters')
         .update(renter)
@@ -86,15 +99,29 @@ export function useRenters() {
       }
       
       setRenters(renters.map(r => r.id === id ? data : r));
+      toast({
+        title: 'Renter updated successfully',
+        description: `${data.name} has been updated`,
+      });
       return data;
     } catch (error) {
       console.error('Error updating renter:', error);
       toast({
         variant: 'destructive',
         title: 'Failed to update renter',
-        description: 'Please try again later',
+        description: error.message || 'Please try again later',
       });
       return null;
+    }
+  };
+
+  // Helper function to validate URLs
+  const isValidUrl = (url: string) => {
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
     }
   };
 
@@ -111,6 +138,10 @@ export function useRenters() {
       }
       
       setRenters(renters.filter(r => r.id !== id));
+      toast({
+        title: 'Renter deleted successfully',
+        description: `Renter has been removed from the system`,
+      });
       return true;
     } catch (error) {
       console.error('Error deleting renter:', error);

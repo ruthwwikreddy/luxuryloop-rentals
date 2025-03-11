@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { CarType } from '@/types/supabase';
@@ -52,6 +51,16 @@ export const useCars = () => {
 
   const addCar = async (car: Omit<CarType, 'id'>) => {
     try {
+      // Validate main image URL
+      if (!isValidUrl(car.image)) {
+        throw new Error('Invalid main image URL');
+      }
+
+      // Validate additional image URLs
+      if (car.images && car.images.some(url => !isValidUrl(url))) {
+        throw new Error('One or more additional image URLs are invalid');
+      }
+
       const { data, error } = await supabase
         .from('cars')
         .insert([car])
@@ -62,13 +71,17 @@ export const useCars = () => {
         throw error;
       }
 
+      toast({
+        title: 'Car added successfully',
+        description: `${car.name} has been added to the fleet`,
+      });
       return data;
     } catch (error) {
       console.error('Error adding car:', error);
       toast({
         variant: 'destructive',
         title: 'Error adding car',
-        description: 'Please try again later.',
+        description: error.message || 'Please try again later.',
       });
       return null;
     }
@@ -76,6 +89,16 @@ export const useCars = () => {
 
   const updateCar = async (id: number, car: Partial<CarType>) => {
     try {
+      // Validate main image URL if provided
+      if (car.image && !isValidUrl(car.image)) {
+        throw new Error('Invalid main image URL');
+      }
+
+      // Validate additional image URLs if provided
+      if (car.images && car.images.some(url => !isValidUrl(url))) {
+        throw new Error('One or more additional image URLs are invalid');
+      }
+
       const { data, error } = await supabase
         .from('cars')
         .update(car)
@@ -87,13 +110,17 @@ export const useCars = () => {
         throw error;
       }
 
+      toast({
+        title: 'Car updated successfully',
+        description: `${car.name || 'Car'} has been updated`,
+      });
       return data;
     } catch (error) {
       console.error('Error updating car:', error);
       toast({
         variant: 'destructive',
         title: 'Error updating car',
-        description: 'Please try again later.',
+        description: error.message || 'Please try again later.',
       });
       return null;
     }
@@ -118,6 +145,16 @@ export const useCars = () => {
         title: 'Error deleting car',
         description: 'Please try again later.',
       });
+      return false;
+    }
+  };
+
+  // Helper function to validate URLs
+  const isValidUrl = (url: string) => {
+    try {
+      new URL(url);
+      return true;
+    } catch {
       return false;
     }
   };
