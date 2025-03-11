@@ -10,6 +10,9 @@ import CarImageGallery from "@/components/car-details/CarImageGallery";
 import CarSpecs from "@/components/car-details/CarSpecs";
 import RentalPolicy from "@/components/car-details/RentalPolicy";
 import BookingForm from "@/components/car-details/BookingForm";
+import ReviewsSection from "@/components/car-details/ReviewsSection";
+import RelatedCars from "@/components/car-details/RelatedCars";
+import VideoGallery from "@/components/car-details/VideoGallery";
 
 const CarDetailsPage = () => {
   const { id } = useParams();
@@ -30,6 +33,47 @@ const CarDetailsPage = () => {
         setLoading(true);
         const carData = await fetchCarById(id);
         if (carData) {
+          // Add mock reviews and videos for demonstration if not present
+          if (!carData.reviews) {
+            carData.reviews = [
+              {
+                id: 1,
+                name: "Rajesh Kumar",
+                rating: 5,
+                comment: "Exceptional luxury experience! The car was immaculate and performed flawlessly during my business trip.",
+                date: "2023-08-15"
+              },
+              {
+                id: 2,
+                name: "Priya Singh",
+                rating: 4,
+                comment: "Very satisfied with the service. The car was delivered on time and in perfect condition.",
+                date: "2023-07-22"
+              },
+              {
+                id: 3,
+                name: "Amit Patel",
+                rating: 5,
+                comment: "Outstanding vehicle and customer service. Made my anniversary special!",
+                date: "2023-06-10"
+              },
+              {
+                id: 4,
+                name: "Neha Sharma",
+                rating: 4,
+                comment: "Great experience overall. The car was a head-turner everywhere I went.",
+                date: "2023-05-18"
+              }
+            ];
+          }
+          
+          if (!carData.videos) {
+            carData.videos = [
+              "https://www.youtube.com/embed/jfKfPfyJRdk",
+              "https://www.youtube.com/embed/5qap5aO4i9A"
+            ];
+          }
+          
           setCar(carData);
         } else {
           // Redirect to 404 page if car not found
@@ -78,6 +122,11 @@ const CarDetailsPage = () => {
             name={car.name} 
           />
           
+          {/* Video Gallery - Show only if videos exist */}
+          {car.videos && car.videos.length > 0 && (
+            <VideoGallery videos={car.videos} name={car.name} />
+          )}
+          
           {/* Car Details & Booking */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Column - Car Details */}
@@ -89,11 +138,19 @@ const CarDetailsPage = () => {
               />
               
               <RentalPolicy availableDates={availableDates} />
+              
+              {/* Reviews Section */}
+              <ReviewsSection reviews={car.reviews} />
             </div>
             
             {/* Right Column - Booking Form */}
-            <BookingForm car={car} carId={carId} />
+            <div className="lg:col-span-1">
+              <BookingForm car={car} carId={carId} />
+            </div>
           </div>
+          
+          {/* Related Cars Section */}
+          <RelatedCars currentCarId={carId} category={car.category} />
         </div>
       </div>
     </Layout>
