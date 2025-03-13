@@ -22,7 +22,7 @@ const CarDetailsPage = () => {
   const { fetchCarById } = useCars();
   const { getAvailableDatesForCar } = useAvailability();
   
-  const carId = id ? parseInt(id) : 0;
+  const carId = useMemo(() => id ? parseInt(id) : 0, [id]);
   const availableDates = useMemo(() => getAvailableDatesForCar(carId), [getAvailableDatesForCar, carId]);
   
   useEffect(() => {

@@ -26,7 +26,7 @@ function Calendar({
         nav: "space-x-1 flex items-center",
         nav_button: cn(
           buttonVariants({ variant: "outline" }),
-          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 transition-all duration-150"
+          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 transition-all duration-200"
         ),
         nav_button_previous: "absolute left-1",
         nav_button_next: "absolute right-1",
@@ -36,7 +36,7 @@ function Calendar({
           "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
         row: "flex w-full mt-2",
         cell: cn(
-          "relative h-9 w-9 text-center text-sm p-0 transition-colors duration-150",
+          "relative h-9 w-9 text-center text-sm p-0 transition-all duration-200",
           "[&:has([aria-selected].day-range-end)]:rounded-r-md",
           "[&:has([aria-selected].day-outside)]:bg-accent/50",
           "[&:has([aria-selected])]:bg-accent",
@@ -46,7 +46,7 @@ function Calendar({
         ),
         day: cn(
           buttonVariants({ variant: "ghost" }),
-          "h-9 w-9 p-0 font-normal aria-selected:opacity-100 transition-all duration-150",
+          "h-9 w-9 p-0 font-normal aria-selected:opacity-100 transition-all duration-200",
           "hover:bg-accent hover:text-accent-foreground"
         ),
         day_range_end: "day-range-end",

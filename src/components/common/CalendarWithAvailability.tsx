@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -31,25 +31,29 @@ const CalendarWithAvailability = ({
   // Default minimum date is today if not specified
   const effectiveMinDate = minDate || today;
   
-  // Memoize the isDateDisabled function to prevent unnecessary re-renders
+  // Memoize the availableDates to prevent unnecessary re-renders
+  const memoizedAvailableDates = useMemo(() => availableDates, [availableDates]);
+  
+  // Memoize the isDateDisabled function
   const isDateDisabled = useCallback((date: Date) => {
     // Check if date is before minimum date
     if (date < effectiveMinDate) return true;
     
     // Check if date is in available dates
-    return !availableDates.some(
+    return !memoizedAvailableDates.some(
       availableDate => 
         availableDate.getFullYear() === date.getFullYear() &&
         availableDate.getMonth() === date.getMonth() &&
         availableDate.getDate() === date.getDate()
     );
-  }, [availableDates, effectiveMinDate]);
+  }, [memoizedAvailableDates, effectiveMinDate]);
 
-  const handleSelect = (date: Date | undefined) => {
+  const handleSelect = useCallback((date: Date | undefined) => {
     setLocalSelectedDate(date);
     onDateChange(date);
-    setIsOpen(false);
-  };
+    // Use a small delay to make the closing animation smoother
+    setTimeout(() => setIsOpen(false), 50);
+  }, [onDateChange]);
 
   // Update local state when prop changes
   useEffect(() => {
@@ -84,7 +88,7 @@ const CalendarWithAvailability = ({
             onSelect={handleSelect}
             disabled={isDateDisabled}
             modifiers={{
-              available: availableDates
+              available: memoizedAvailableDates
             }}
             modifiersClassNames={{
               available: "border border-luxury-gold text-luxury-gold hover:bg-luxury-gold/20"
@@ -106,4 +110,5 @@ const CalendarWithAvailability = ({
   );
 };
 
-export default CalendarWithAvailability;
+// Use memo to prevent unnecessary re-renders
+export default React.memo(CalendarWithAvailability);
