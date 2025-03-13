@@ -26,6 +26,7 @@ const CalendarWithAvailability = ({
 }: CalendarWithAvailabilityProps) => {
   const today = new Date();
   const [isOpen, setIsOpen] = useState(false);
+  const [localSelectedDate, setLocalSelectedDate] = useState<Date | undefined>(selectedDate);
   
   // Default minimum date is today if not specified
   const effectiveMinDate = minDate || today;
@@ -45,9 +46,15 @@ const CalendarWithAvailability = ({
   };
 
   const handleSelect = (date: Date | undefined) => {
+    setLocalSelectedDate(date);
     onDateChange(date);
     setIsOpen(false);
   };
+
+  // Update local state when prop changes
+  React.useEffect(() => {
+    setLocalSelectedDate(selectedDate);
+  }, [selectedDate]);
 
   return (
     <div className={className}>
@@ -66,29 +73,29 @@ const CalendarWithAvailability = ({
           </Button>
         </PopoverTrigger>
         <PopoverContent 
-          className="w-auto p-0 border-luxury-gold/30 bg-luxury-black/90 shadow-md animate-in zoom-in-90 duration-200"
+          className="w-auto p-0 border-luxury-gold/30 bg-luxury-black/95 backdrop-blur-lg shadow-xl animate-in zoom-in-95 duration-100"
           sideOffset={5}
           align="start"
         >
           <Calendar
             mode="single"
-            selected={selectedDate}
+            selected={localSelectedDate}
             onSelect={handleSelect}
             disabled={isDateDisabled}
             modifiers={{
               available: availableDates
             }}
             modifiersClassNames={{
-              available: "border-2 border-luxury-gold text-luxury-gold hover:bg-luxury-gold/20"
+              available: "border border-luxury-gold text-luxury-gold hover:bg-luxury-gold/20"
             }}
-            className="bg-luxury-black/90"
+            className="bg-transparent"
             classNames={{
               day: cn(
                 "h-9 w-9 p-0 font-normal aria-selected:opacity-100 transition-colors duration-200",
                 "hover:bg-luxury-gold/20 hover:text-luxury-gold focus:bg-luxury-gold/20 focus:text-luxury-gold"
               ),
               day_today: "bg-luxury-gold/20 text-luxury-gold font-semibold",
-              day_selected: "bg-luxury-gold/40 text-white hover:bg-luxury-gold/50",
+              day_selected: "bg-luxury-gold text-black hover:bg-luxury-gold/90",
               day_disabled: "text-muted-foreground opacity-30 hover:bg-transparent hover:text-muted-foreground"
             }}
           />
