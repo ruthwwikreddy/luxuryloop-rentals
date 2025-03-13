@@ -11,16 +11,6 @@ export interface CarType {
   description: string | null;
   features: string[];
   locations: string[];
-  videos?: string[];
-  reviews?: ReviewType[];
-}
-
-export interface ReviewType {
-  id: number;
-  name: string;
-  rating: number;
-  comment: string;
-  date: string;
 }
 
 export interface AvailableDateType {

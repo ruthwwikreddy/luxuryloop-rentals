@@ -1,10 +1,9 @@
 
-import { CircleCheck, CarFront, Shield, Search } from "lucide-react";
-import { useState, useCallback } from "react";
+import { CircleCheck, CarFront, Shield, Calendar, Search } from "lucide-react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import CalendarWithAvailability from "@/components/common/CalendarWithAvailability";
 
 const steps = [
   {
@@ -27,21 +26,23 @@ const steps = [
 const BookingProcess = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [searchDate, setSearchDate] = useState<Date | undefined>(undefined);
-  const [category, setCategory] = useState("");
+  const [searchParams, setSearchParams] = useState({
+    date: "",
+    category: ""
+  });
 
-  const handleCategoryChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    setCategory(e.target.value);
-  }, []);
-
-  const handleDateChange = useCallback((date: Date | undefined) => {
-    setSearchDate(date);
-  }, []);
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setSearchParams({
+      ...searchParams,
+      [name]: value
+    });
+  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!searchDate) {
+    if (!searchParams.date) {
       toast({
         variant: "destructive",
         title: "Date is required",
@@ -52,8 +53,8 @@ const BookingProcess = () => {
     
     // Navigate to fleet page with query parameters
     const queryParams = new URLSearchParams();
-    if (searchDate) queryParams.set("date", searchDate.toISOString().split('T')[0]);
-    if (category) queryParams.set("category", category);
+    if (searchParams.date) queryParams.set("date", searchParams.date);
+    if (searchParams.category) queryParams.set("category", searchParams.category);
     
     navigate(`/fleet?${queryParams.toString()}`);
     
@@ -109,19 +110,22 @@ const BookingProcess = () => {
           </p>
           <div className="glass-card p-8 rounded-lg gold-border inline-block">
             <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-              <CalendarWithAvailability
-                label="Select Date"
-                selectedDate={searchDate}
-                onDateChange={handleDateChange}
-                availableDates={[]} // We don't filter by availability on search
-                className="w-full"
-              />
-              
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-luxury-gold" />
+                <input
+                  type="date"
+                  name="date"
+                  value={searchParams.date}
+                  onChange={handleInputChange}
+                  className="w-full pl-10 pr-4 py-3 bg-luxury-black border border-luxury-gold/30 rounded-md text-white focus:outline-none focus:border-luxury-gold"
+                  placeholder="Select Date"
+                />
+              </div>
               <div>
-                <label className="block text-white mb-2">Car Category</label>
                 <select 
-                  value={category}
-                  onChange={handleCategoryChange}
+                  name="category"
+                  value={searchParams.category}
+                  onChange={handleInputChange}
                   className="w-full px-4 py-3 bg-luxury-black border border-luxury-gold/30 rounded-md text-white focus:outline-none focus:border-luxury-gold appearance-none"
                 >
                   <option value="">Select Car Category</option>
@@ -133,7 +137,6 @@ const BookingProcess = () => {
                   <option value="Grand Tourer">Grand Tourer</option>
                 </select>
               </div>
-              
               <button type="submit" className="btn-luxury w-full flex items-center justify-center gap-2">
                 <Search className="h-4 w-4" />
                 Search Availability
