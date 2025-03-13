@@ -1,11 +1,15 @@
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import Layout from "@/components/Layout";
 import { useRenters } from "@/hooks/use-renters";
 import { Phone, Mail, MapPin } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const RentersPage = () => {
   const { renters, loading, fetchRenters } = useRenters();
+  
+  // Memoize renters to prevent unnecessary re-renders
+  const memoizedRenters = useMemo(() => renters, [renters]);
   
   useEffect(() => {
     // Refresh data when component mounts
@@ -25,24 +29,39 @@ const RentersPage = () => {
           </div>
           
           {loading ? (
-            <div className="flex justify-center items-center py-20">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-luxury-gold"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[...Array(6)].map((_, index) => (
+                <div key={index} className="glass-card rounded-lg overflow-hidden">
+                  <Skeleton className="h-48 w-full" />
+                  <div className="p-6 space-y-4">
+                    <Skeleton className="h-8 w-3/4" />
+                    <Skeleton className="h-24 w-full" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-5 w-full" />
+                      <Skeleton className="h-5 w-full" />
+                      <Skeleton className="h-5 w-full" />
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {renters.length === 0 ? (
+              {memoizedRenters.length === 0 ? (
                 <div className="col-span-full text-center py-10">
                   <p className="text-white/70">No car renters available at the moment. Please check back later.</p>
                 </div>
               ) : (
-                renters.map((renter) => (
-                  <div key={renter.id} className="glass-card rounded-lg overflow-hidden transition-transform duration-300 hover:-translate-y-2">
+                memoizedRenters.map((renter) => (
+                  <div key={renter.id} className="glass-card rounded-lg overflow-hidden transition-all duration-300 hover:-translate-y-2 will-change-transform">
                     <div className="h-48 overflow-hidden relative">
                       {renter.image ? (
                         <img 
                           src={renter.image} 
                           alt={renter.name} 
                           className="w-full h-full object-cover"
+                          loading="lazy"
+                          decoding="async"
                           onError={(e) => {
                             e.currentTarget.src = "https://via.placeholder.com/600x400?text=No+Image+Available";
                           }}

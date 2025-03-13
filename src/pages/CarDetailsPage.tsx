@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { useAvailability } from "@/hooks/use-availability";
@@ -13,6 +13,7 @@ import BookingForm from "@/components/car-details/BookingForm";
 import ReviewsSection from "@/components/car-details/ReviewsSection";
 import RelatedCars from "@/components/car-details/RelatedCars";
 import VideoGallery from "@/components/car-details/VideoGallery";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const CarDetailsPage = () => {
   const { id } = useParams();
@@ -22,7 +23,7 @@ const CarDetailsPage = () => {
   const { getAvailableDatesForCar } = useAvailability();
   
   const carId = id ? parseInt(id) : 0;
-  const availableDates = getAvailableDatesForCar(carId);
+  const availableDates = useMemo(() => getAvailableDatesForCar(carId), [getAvailableDatesForCar, carId]);
   
   useEffect(() => {
     // Scroll to top when component mounts
@@ -89,8 +90,26 @@ const CarDetailsPage = () => {
   if (loading) {
     return (
       <Layout>
-        <div className="min-h-screen flex items-center justify-center">
-          <p className="text-white">Loading...</p>
+        <div className="pt-32 pb-20 bg-luxury-black">
+          <div className="luxury-container">
+            <div className="mb-10">
+              <Skeleton className="h-12 w-3/4 mb-4" />
+              <Skeleton className="h-6 w-1/2" />
+            </div>
+            
+            <Skeleton className="w-full h-96 mb-10 rounded-xl" />
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2 space-y-8">
+                <Skeleton className="h-64 w-full" />
+                <Skeleton className="h-40 w-full" />
+                <Skeleton className="h-64 w-full" />
+              </div>
+              <div className="lg:col-span-1">
+                <Skeleton className="h-[500px] w-full rounded-xl" />
+              </div>
+            </div>
+          </div>
         </div>
       </Layout>
     );
