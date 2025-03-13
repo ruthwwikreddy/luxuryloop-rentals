@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,6 @@ import AuthGuard from "@/components/AuthGuard";
 import { useCars } from "@/hooks/use-cars";
 import { useBookings } from "@/hooks/use-bookings";
 import { useAvailability } from "@/hooks/use-availability";
-import { useRenters, RenterType } from "@/hooks/use-renters";
 import { CarType } from "@/types/supabase";
 import {
   Car,
@@ -23,14 +21,12 @@ import {
   LogOut,
   Edit,
   Trash,
-  PenLine,
-  Users
+  PenLine
 } from "lucide-react";
 
 const AdminPage = () => {
   const { toast } = useToast();
   const { cars, loading: carsLoading, addCar, updateCar, deleteCar } = useCars();
-  const { renters, loading: rentersLoading, addRenter, updateRenter, deleteRenter } = useRenters();
   const { bookings, loading: bookingsLoading, updateBookingStatus } = useBookings();
   const { getAvailableDatesForCar, toggleDateAvailability } = useAvailability();
   
@@ -48,19 +44,6 @@ const AdminPage = () => {
     features: [],
     locations: []
   });
-  
-  // Car renter state
-  const [showRenterForm, setShowRenterForm] = useState(false);
-  const [editingRenter, setEditingRenter] = useState<RenterType | null>(null);
-  const [newRenter, setNewRenter] = useState<Partial<RenterType>>({
-    name: "",
-    email: "",
-    phone: "",
-    address: "",
-    description: "",
-    image: ""
-  });
-  
   const [selectedCarId, setSelectedCarId] = useState<number | null>(null);
   const [selectedDates, setSelectedDates] = useState<Date[]>([]);
   const [spec, setSpec] = useState("");
@@ -68,7 +51,6 @@ const AdminPage = () => {
   const [location, setLocation] = useState("");
   const [imageUrl, setImageUrl] = useState("");
 
-  // Handle car form input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
@@ -80,14 +62,7 @@ const AdminPage = () => {
       setNewCar({ ...newCar, [name]: value });
     }
   };
-  
-  // Handle renter form input changes
-  const handleRenterInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setNewRenter({ ...newRenter, [name]: value });
-  };
 
-  // Car form helpers
   const addSpec = () => {
     if (spec.trim() && newCar.specs) {
       setNewCar({ ...newCar, specs: [...(newCar.specs || []), spec.trim()] });
@@ -152,7 +127,6 @@ const AdminPage = () => {
     setNewCar({ ...newCar, image });
   };
 
-  // Car form actions
   const handleEditCar = (car: CarType) => {
     setEditingCar(car);
     setNewCar({...car});
@@ -187,38 +161,6 @@ const AdminPage = () => {
     setShowForm(false);
   };
 
-  // Renter form actions
-  const handleEditRenter = (renter: RenterType) => {
-    setEditingRenter(renter);
-    setNewRenter({...renter});
-    setShowRenterForm(true);
-  };
-
-  const handleDeleteRenter = async (renterId: number) => {
-    const success = await deleteRenter(renterId);
-    
-    if (success) {
-      toast({
-        title: "Renter deleted",
-        description: "The car renter has been removed"
-      });
-    }
-  };
-
-  const resetRenterForm = () => {
-    setNewRenter({
-      name: "",
-      email: "",
-      phone: "",
-      address: "",
-      description: "",
-      image: ""
-    });
-    setEditingRenter(null);
-    setShowRenterForm(false);
-  };
-
-  // Car form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -264,52 +206,6 @@ const AdminPage = () => {
         variant: "destructive",
         title: "Error saving car",
         description: "An error occurred while saving the car"
-      });
-    }
-  };
-
-  // Renter form submission
-  const handleRenterSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!newRenter.name) {
-      toast({
-        variant: "destructive",
-        title: "Missing required fields",
-        description: "Please enter at least the renter name"
-      });
-      return;
-    }
-    
-    try {
-      if (editingRenter && editingRenter.id) {
-        const updatedRenter = await updateRenter(editingRenter.id, newRenter);
-        
-        if (updatedRenter) {
-          toast({
-            title: "Renter updated",
-            description: `${newRenter.name} has been updated`
-          });
-          resetRenterForm();
-        }
-      } else {
-        const renterToAdd = newRenter as Omit<RenterType, 'id' | 'created_at'>;
-        const addedRenter = await addRenter(renterToAdd);
-        
-        if (addedRenter) {
-          toast({
-            title: "Renter added successfully",
-            description: `${newRenter.name} has been added`
-          });
-          resetRenterForm();
-        }
-      }
-    } catch (error) {
-      console.error("Error saving renter:", error);
-      toast({
-        variant: "destructive",
-        title: "Error saving renter",
-        description: "An error occurred while saving the renter"
       });
     }
   };
@@ -369,7 +265,6 @@ const AdminPage = () => {
                   onClick={() => {
                     setEditingCar(null);
                     setShowForm(!showForm);
-                    setShowRenterForm(false);
                   }}
                 >
                   {showForm ? "Cancel" : "Add New Car"}
@@ -690,132 +585,12 @@ const AdminPage = () => {
                 </form>
               </div>
             ) : null}
-            
-            {showRenterForm ? (
-              <div className="glass-card p-6 rounded-lg mb-8">
-                <h2 className="font-playfair text-2xl text-white mb-4">
-                  {editingRenter ? `Edit ${editingRenter.name}` : "Add New Car Renter"}
-                </h2>
-                <form onSubmit={handleRenterSubmit} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-white mb-2">Renter Name *</label>
-                        <input
-                          type="text"
-                          name="name"
-                          value={newRenter.name}
-                          onChange={handleRenterInputChange}
-                          placeholder="e.g. John Smith"
-                          className="input-luxury w-full"
-                          required
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-white mb-2">Email</label>
-                        <input
-                          type="email"
-                          name="email"
-                          value={newRenter.email || ''}
-                          onChange={handleRenterInputChange}
-                          placeholder="e.g. john@example.com"
-                          className="input-luxury w-full"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-white mb-2">Phone</label>
-                        <input
-                          type="text"
-                          name="phone"
-                          value={newRenter.phone || ''}
-                          onChange={handleRenterInputChange}
-                          placeholder="e.g. +91 98765 43210"
-                          className="input-luxury w-full"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-white mb-2">Address</label>
-                        <textarea
-                          name="address"
-                          value={newRenter.address || ''}
-                          onChange={handleRenterInputChange}
-                          placeholder="Enter address..."
-                          className="input-luxury w-full"
-                          rows={3}
-                        ></textarea>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-white mb-2">Image URL</label>
-                        <input
-                          type="text"
-                          name="image"
-                          value={newRenter.image || ''}
-                          onChange={handleRenterInputChange}
-                          placeholder="https://example.com/image.jpg"
-                          className="input-luxury w-full"
-                        />
-                      </div>
-                      
-                      {newRenter.image && (
-                        <div className="mt-2 relative rounded-md overflow-hidden h-32">
-                          <img 
-                            src={newRenter.image} 
-                            alt="Renter image" 
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.currentTarget.src = "https://via.placeholder.com/400x300?text=Invalid+Image+URL";
-                            }}
-                          />
-                        </div>
-                      )}
-                      
-                      <div>
-                        <label className="block text-white mb-2">Description</label>
-                        <textarea
-                          name="description"
-                          value={newRenter.description || ''}
-                          onChange={handleRenterInputChange}
-                          placeholder="Describe the renter..."
-                          className="input-luxury w-full"
-                          rows={4}
-                        ></textarea>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-between pt-4 border-t border-luxury-gold/20">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      className="btn-outline-luxury"
-                      onClick={resetRenterForm}
-                    >
-                      Cancel
-                    </Button>
-                    <Button type="submit" className="btn-luxury">
-                      <Users className="h-4 w-4 mr-2" />
-                      {editingRenter ? "Update Renter" : "Add Renter"}
-                    </Button>
-                  </div>
-                </form>
-              </div>
-            ) : null}
 
             <Tabs defaultValue="fleet" className="w-full">
-              <TabsList className="grid w-full grid-cols-4 mb-8 bg-luxury-black border border-luxury-gold/20">
+              <TabsList className="grid w-full grid-cols-3 mb-8 bg-luxury-black border border-luxury-gold/20">
                 <TabsTrigger value="fleet" className="data-[state=active]:bg-luxury-gold data-[state=active]:text-black">
                   <Car className="h-4 w-4 mr-2" />
                   Fleet Management
-                </TabsTrigger>
-                <TabsTrigger value="renters" className="data-[state=active]:bg-luxury-gold data-[state=active]:text-black">
-                  <Users className="h-4 w-4 mr-2" />
-                  Car Renters
                 </TabsTrigger>
                 <TabsTrigger value="bookings" className="data-[state=active]:bg-luxury-gold data-[state=active]:text-black">
                   <ClipboardList className="h-4 w-4 mr-2" />
@@ -849,162 +624,52 @@ const AdminPage = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {cars.length === 0 ? (
-                            <tr>
-                              <td colSpan={7} className="text-center py-8 text-white/70">
-                                No cars in the fleet yet. Add some!
+                          {cars.map((car) => (
+                            <tr key={car.id} className="border-b border-luxury-gold/10 hover:bg-luxury-gold/5">
+                              <td className="py-3 px-4 text-white">{car.id}</td>
+                              <td className="py-3 px-4">
+                                <div className="w-16 h-12 rounded overflow-hidden">
+                                  <img 
+                                    src={car.image} 
+                                    alt={car.name} 
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      e.currentTarget.src = "https://via.placeholder.com/400x300?text=No+Image";
+                                    }}
+                                  />
+                                </div>
+                              </td>
+                              <td className="py-3 px-4 text-white">{car.name}</td>
+                              <td className="py-3 px-4 text-white/70">{car.category}</td>
+                              <td className="py-3 px-4">
+                                <span className="gold-gradient-text font-bold">₹{car.price.toLocaleString()}</span>
+                                <span className="text-white/50 text-sm ml-1">{car.per_day ? '/day' : ''}</span>
+                              </td>
+                              <td className="py-3 px-4 text-white/70">
+                                {car.locations?.join(", ") || "Multiple Locations"}
+                              </td>
+                              <td className="py-3 px-4 text-right">
+                                <div className="flex justify-end space-x-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="bg-luxury-gold/10 border-luxury-gold/30 hover:bg-luxury-gold/20"
+                                    onClick={() => handleEditCar(car)}
+                                  >
+                                    <PenLine className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="bg-red-500/10 border-red-500/30 hover:bg-red-500/20 text-red-400"
+                                    onClick={() => handleDeleteCar(car.id)}
+                                  >
+                                    <Trash className="h-4 w-4" />
+                                  </Button>
+                                </div>
                               </td>
                             </tr>
-                          ) : (
-                            cars.map((car) => (
-                              <tr key={car.id} className="border-b border-luxury-gold/10 hover:bg-luxury-gold/5">
-                                <td className="py-3 px-4 text-white">{car.id}</td>
-                                <td className="py-3 px-4">
-                                  <div className="w-16 h-12 rounded overflow-hidden">
-                                    <img 
-                                      src={car.image} 
-                                      alt={car.name} 
-                                      className="w-full h-full object-cover"
-                                      onError={(e) => {
-                                        e.currentTarget.src = "https://via.placeholder.com/400x300?text=No+Image";
-                                      }}
-                                    />
-                                  </div>
-                                </td>
-                                <td className="py-3 px-4 text-white">{car.name}</td>
-                                <td className="py-3 px-4 text-white/70">{car.category}</td>
-                                <td className="py-3 px-4">
-                                  <span className="gold-gradient-text font-bold">₹{car.price.toLocaleString()}</span>
-                                  <span className="text-white/50 text-sm ml-1">{car.per_day ? '/day' : ''}</span>
-                                </td>
-                                <td className="py-3 px-4 text-white/70">
-                                  {car.locations?.join(", ") || "Multiple Locations"}
-                                </td>
-                                <td className="py-3 px-4 text-right">
-                                  <div className="flex justify-end space-x-2">
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="bg-luxury-gold/10 border-luxury-gold/30 hover:bg-luxury-gold/20"
-                                      onClick={() => handleEditCar(car)}
-                                    >
-                                      <PenLine className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="bg-red-500/10 border-red-500/30 hover:bg-red-500/20 text-red-400"
-                                      onClick={() => handleDeleteCar(car.id)}
-                                    >
-                                      <Trash className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="renters">
-                <div className="glass-card p-6 rounded-lg">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="font-playfair text-2xl text-white">Car Renters Management</h2>
-                    <Button 
-                      className="btn-luxury"
-                      onClick={() => {
-                        setEditingRenter(null);
-                        setShowRenterForm(!showRenterForm);
-                        setShowForm(false);
-                      }}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add New Renter
-                    </Button>
-                  </div>
-                  
-                  {rentersLoading ? (
-                    <div className="text-center py-8">
-                      <p className="text-white">Loading renters...</p>
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b border-luxury-gold/20">
-                            <th className="text-left py-3 px-4 text-luxury-gold">ID</th>
-                            <th className="text-left py-3 px-4 text-luxury-gold">Image</th>
-                            <th className="text-left py-3 px-4 text-luxury-gold">Name</th>
-                            <th className="text-left py-3 px-4 text-luxury-gold">Contact</th>
-                            <th className="text-left py-3 px-4 text-luxury-gold">Address</th>
-                            <th className="text-right py-3 px-4 text-luxury-gold">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {renters.length === 0 ? (
-                            <tr>
-                              <td colSpan={6} className="text-center py-8 text-white/70">
-                                No car renters yet. Add some!
-                              </td>
-                            </tr>
-                          ) : (
-                            renters.map((renter) => (
-                              <tr key={renter.id} className="border-b border-luxury-gold/10 hover:bg-luxury-gold/5">
-                                <td className="py-3 px-4 text-white">{renter.id}</td>
-                                <td className="py-3 px-4">
-                                  {renter.image ? (
-                                    <div className="w-16 h-12 rounded overflow-hidden">
-                                      <img 
-                                        src={renter.image} 
-                                        alt={renter.name} 
-                                        className="w-full h-full object-cover"
-                                        onError={(e) => {
-                                          e.currentTarget.src = "https://via.placeholder.com/400x300?text=No+Image";
-                                        }}
-                                      />
-                                    </div>
-                                  ) : (
-                                    <div className="w-16 h-12 rounded bg-luxury-gold/20 flex items-center justify-center">
-                                      <Users className="h-6 w-6 text-white/50" />
-                                    </div>
-                                  )}
-                                </td>
-                                <td className="py-3 px-4 text-white">{renter.name}</td>
-                                <td className="py-3 px-4 text-white/70">
-                                  {renter.email && <div>{renter.email}</div>}
-                                  {renter.phone && <div>{renter.phone}</div>}
-                                  {!renter.email && !renter.phone && <div className="text-white/30">No contact info</div>}
-                                </td>
-                                <td className="py-3 px-4 text-white/70 max-w-xs truncate">
-                                  {renter.address || <span className="text-white/30">No address</span>}
-                                </td>
-                                <td className="py-3 px-4 text-right">
-                                  <div className="flex justify-end space-x-2">
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="bg-luxury-gold/10 border-luxury-gold/30 hover:bg-luxury-gold/20"
-                                      onClick={() => handleEditRenter(renter)}
-                                    >
-                                      <PenLine className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="bg-red-500/10 border-red-500/30 hover:bg-red-500/20 text-red-400"
-                                      onClick={() => handleDeleteRenter(renter.id)}
-                                    >
-                                      <Trash className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))
-                          )}
+                          ))}
                         </tbody>
                       </table>
                     </div>
