@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -52,7 +52,7 @@ const CalendarWithAvailability = ({
   };
 
   // Update local state when prop changes
-  React.useEffect(() => {
+  useEffect(() => {
     setLocalSelectedDate(selectedDate);
   }, [selectedDate]);
 
