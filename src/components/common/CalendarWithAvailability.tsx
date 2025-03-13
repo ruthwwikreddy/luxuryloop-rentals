@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -31,8 +31,8 @@ const CalendarWithAvailability = ({
   // Default minimum date is today if not specified
   const effectiveMinDate = minDate || today;
   
-  // Function to determine if a date is disabled
-  const isDateDisabled = (date: Date) => {
+  // Memoize the isDateDisabled function to prevent unnecessary re-renders
+  const isDateDisabled = useCallback((date: Date) => {
     // Check if date is before minimum date
     if (date < effectiveMinDate) return true;
     
@@ -43,7 +43,7 @@ const CalendarWithAvailability = ({
         availableDate.getMonth() === date.getMonth() &&
         availableDate.getDate() === date.getDate()
     );
-  };
+  }, [availableDates, effectiveMinDate]);
 
   const handleSelect = (date: Date | undefined) => {
     setLocalSelectedDate(date);
@@ -73,9 +73,10 @@ const CalendarWithAvailability = ({
           </Button>
         </PopoverTrigger>
         <PopoverContent 
-          className="w-auto p-0 border-luxury-gold/30 bg-luxury-black/95 backdrop-blur-lg shadow-xl animate-in zoom-in-95 duration-100"
+          className="w-auto p-0 border-luxury-gold/30 bg-luxury-black/95 backdrop-blur-lg shadow-xl"
           sideOffset={5}
           align="start"
+          forceMount
         >
           <Calendar
             mode="single"

@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Shield, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import CalendarWithAvailability from "@/components/common/CalendarWithAvailability";
@@ -10,6 +10,11 @@ interface RentalPolicyProps {
 
 const RentalPolicy = ({ availableDates }: RentalPolicyProps) => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  
+  // Use useCallback to prevent unnecessary re-renders
+  const handleDateChange = useCallback((date: Date | undefined) => {
+    setSelectedDate(date);
+  }, []);
   
   return (
     <div className="glass-card rounded-lg gold-border p-8 mb-8">
@@ -59,7 +64,7 @@ const RentalPolicy = ({ availableDates }: RentalPolicyProps) => {
               <CalendarWithAvailability
                 label="Check Availability"
                 selectedDate={selectedDate}
-                onDateChange={setSelectedDate}
+                onDateChange={handleDateChange}
                 availableDates={availableDates}
               />
               {selectedDate && (

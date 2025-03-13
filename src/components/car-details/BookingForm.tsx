@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Shield, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
@@ -22,13 +22,18 @@ const BookingForm = ({ car, carId }: BookingFormProps) => {
   
   const availableDates = getAvailableDatesForCar(carId);
 
-  const handlePickupDateChange = (date: Date | undefined) => {
+  // Use useCallback to memoize the handler functions to prevent re-renders
+  const handlePickupDateChange = useCallback((date: Date | undefined) => {
     setPickupDate(date);
     // Reset return date if pickup date is after return date
     if (date && returnDate && date > returnDate) {
       setReturnDate(undefined);
     }
-  };
+  }, [returnDate]);
+
+  const handleReturnDateChange = useCallback((date: Date | undefined) => {
+    setReturnDate(date);
+  }, []);
 
   const handleBookNow = async () => {
     if (!pickupDate || !returnDate) {
@@ -132,7 +137,7 @@ const BookingForm = ({ car, carId }: BookingFormProps) => {
           <CalendarWithAvailability
             label="Return Date"
             selectedDate={returnDate}
-            onDateChange={setReturnDate}
+            onDateChange={handleReturnDateChange}
             availableDates={availableDates}
             minDate={pickupDate}
           />

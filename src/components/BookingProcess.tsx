@@ -1,5 +1,6 @@
+
 import { CircleCheck, CarFront, Shield, Search } from "lucide-react";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -29,9 +30,13 @@ const BookingProcess = () => {
   const [searchDate, setSearchDate] = useState<Date | undefined>(undefined);
   const [category, setCategory] = useState("");
 
-  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleCategoryChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     setCategory(e.target.value);
-  };
+  }, []);
+
+  const handleDateChange = useCallback((date: Date | undefined) => {
+    setSearchDate(date);
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,7 +112,7 @@ const BookingProcess = () => {
               <CalendarWithAvailability
                 label="Select Date"
                 selectedDate={searchDate}
-                onDateChange={setSearchDate}
+                onDateChange={handleDateChange}
                 availableDates={[]} // We don't filter by availability on search
                 className="w-full"
               />
