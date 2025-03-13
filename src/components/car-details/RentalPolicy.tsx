@@ -63,7 +63,7 @@ const RentalPolicy = ({ availableDates }: RentalPolicyProps) => {
                 availableDates={availableDates}
               />
               {selectedDate && (
-                <p className="text-luxury-gold mt-3">
+                <p className="text-luxury-gold mt-3 transition-opacity duration-300">
                   {format(selectedDate, "MMMM d, yyyy")} is available for booking!
                 </p>
               )}

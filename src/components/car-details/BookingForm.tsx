@@ -22,6 +22,14 @@ const BookingForm = ({ car, carId }: BookingFormProps) => {
   
   const availableDates = getAvailableDatesForCar(carId);
 
+  const handlePickupDateChange = (date: Date | undefined) => {
+    setPickupDate(date);
+    // Reset return date if pickup date is after return date
+    if (date && returnDate && date > returnDate) {
+      setReturnDate(undefined);
+    }
+  };
+
   const handleBookNow = async () => {
     if (!pickupDate || !returnDate) {
       toast({
@@ -117,7 +125,7 @@ const BookingForm = ({ car, carId }: BookingFormProps) => {
           <CalendarWithAvailability
             label="Pickup Date"
             selectedDate={pickupDate}
-            onDateChange={setPickupDate}
+            onDateChange={handlePickupDateChange}
             availableDates={availableDates}
           />
           
