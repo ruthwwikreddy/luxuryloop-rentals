@@ -25,7 +25,7 @@ export const useBookings = () => {
       const typedData = (data || []).map(booking => ({
         ...booking,
         status: booking.status as "pending" | "approved" | "rejected"
-      }));
+      })) as BookingType[];
 
       setBookings(typedData);
     } catch (error) {
@@ -74,7 +74,7 @@ export const useBookings = () => {
       const typedData = {
         ...data,
         status: data.status as "pending" | "approved" | "rejected"
-      };
+      } as BookingType;
 
       setBookings(prevBookings => 
         prevBookings.map(booking => booking.id === id ? typedData : booking)
@@ -145,7 +145,7 @@ export const useBookings = () => {
       const typedData = {
         ...data,
         status: data.status as "pending" | "approved" | "rejected"
-      };
+      } as BookingType;
 
       setBookings(prevBookings => [typedData, ...prevBookings]);
       
