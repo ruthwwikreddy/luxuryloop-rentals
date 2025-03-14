@@ -1,6 +1,6 @@
 
-import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { BookingType } from '@/types/supabase';
 import { useToast } from './use-toast';
 
@@ -9,25 +9,9 @@ export const useBookings = () => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchBookings();
-
-    // Subscribe to real-time changes
-    const channel = supabase
-      .channel('public:bookings')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, (payload) => {
-        console.log('Booking change received!', payload);
-        fetchBookings();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  const fetchBookings = async () => {
+  const fetchBookings = useCallback(async () => {
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from('bookings')
         .select('*')
@@ -48,9 +32,26 @@ export const useBookings = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  const updateBookingStatus = async (id: number, status: 'pending' | 'approved' | 'rejected') => {
+  useEffect(() => {
+    fetchBookings();
+
+    // Subscribe to real-time changes
+    const channel = supabase
+      .channel('public:bookings')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, (payload) => {
+        console.log('Booking change received!', payload);
+        fetchBookings();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchBookings]);
+
+  const updateBookingStatus = useCallback(async (id: number, status: 'pending' | 'approved' | 'rejected') => {
     try {
       const { data, error } = await supabase
         .from('bookings')
@@ -63,6 +64,15 @@ export const useBookings = () => {
         throw error;
       }
 
+      setBookings(prevBookings => 
+        prevBookings.map(booking => booking.id === id ? data : booking)
+      );
+      
+      toast({
+        title: "Success",
+        description: `Booking status updated to ${status}`,
+      });
+      
       return data;
     } catch (error) {
       console.error('Error updating booking status:', error);
@@ -73,9 +83,41 @@ export const useBookings = () => {
       });
       return null;
     }
-  };
+  }, [toast]);
 
-  const addBooking = async (booking: Omit<BookingType, 'id' | 'created_at'>) => {
+  const deleteBooking = useCallback(async (id: number) => {
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        throw error;
+      }
+
+      setBookings(prevBookings => 
+        prevBookings.filter(booking => booking.id !== id)
+      );
+      
+      toast({
+        title: "Booking Deleted",
+        description: "The booking has been successfully deleted."
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Error deleting booking:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error deleting booking',
+        description: 'Please try again later.',
+      });
+      return false;
+    }
+  }, [toast]);
+
+  const addBooking = useCallback(async (booking: Omit<BookingType, 'id' | 'created_at'>) => {
     try {
       const { data, error } = await supabase
         .from('bookings')
@@ -87,6 +129,13 @@ export const useBookings = () => {
         throw error;
       }
 
+      setBookings(prevBookings => [data, ...prevBookings]);
+      
+      toast({
+        title: "Booking Created",
+        description: "New booking has been successfully created."
+      });
+      
       return data;
     } catch (error) {
       console.error('Error adding booking:', error);
@@ -97,12 +146,14 @@ export const useBookings = () => {
       });
       return null;
     }
-  };
+  }, [toast]);
 
   return {
     bookings,
     loading,
+    fetchBookings,
     updateBookingStatus,
+    deleteBooking,
     addBooking
   };
 };
