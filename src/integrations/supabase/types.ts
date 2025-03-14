@@ -100,6 +100,57 @@ export type Database = {
           },
         ]
       }
+      car_renters: {
+        Row: {
+          address: string | null
+          created_at: string | null
+          description: string | null
+          email: string | null
+          featured_cars: string[] | null
+          id: number
+          image: string | null
+          member_since: string | null
+          name: string
+          phone: string | null
+          rating: number | null
+          review_count: number | null
+          specialties: string[] | null
+          verification: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string | null
+          description?: string | null
+          email?: string | null
+          featured_cars?: string[] | null
+          id?: number
+          image?: string | null
+          member_since?: string | null
+          name: string
+          phone?: string | null
+          rating?: number | null
+          review_count?: number | null
+          specialties?: string[] | null
+          verification?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string | null
+          description?: string | null
+          email?: string | null
+          featured_cars?: string[] | null
+          id?: number
+          image?: string | null
+          member_since?: string | null
+          name?: string
+          phone?: string | null
+          rating?: number | null
+          review_count?: number | null
+          specialties?: string[] | null
+          verification?: string | null
+        }
+        Relationships: []
+      }
       cars: {
         Row: {
           category: string

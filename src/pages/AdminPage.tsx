@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import { useCars } from "@/hooks/use-cars";
 import { useBookings } from "@/hooks/use-bookings";
 import { useAvailability } from "@/hooks/use-availability";
 import { CarType } from "@/types/supabase";
+import CarRenterManagement from "@/components/CarRenterManagement";
 import {
   Car,
   Upload,
@@ -21,7 +23,8 @@ import {
   LogOut,
   Edit,
   Trash,
-  PenLine
+  PenLine,
+  Users
 } from "lucide-react";
 
 const AdminPage = () => {
@@ -272,7 +275,11 @@ const AdminPage = () => {
                 <Button 
                   variant="outline" 
                   className="btn-outline-luxury"
-                  onClick={handleLogout}
+                  onClick={() => {
+                    localStorage.removeItem("adminAuthenticated");
+                    localStorage.removeItem("adminId");
+                    window.location.href = "/admin-login";
+                  }}
                 >
                   <LogOut className="h-4 w-4 mr-2" />
                   Logout
@@ -587,7 +594,7 @@ const AdminPage = () => {
             ) : null}
 
             <Tabs defaultValue="fleet" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 mb-8 bg-luxury-black border border-luxury-gold/20">
+              <TabsList className="grid w-full grid-cols-4 mb-8 bg-luxury-black border border-luxury-gold/20">
                 <TabsTrigger value="fleet" className="data-[state=active]:bg-luxury-gold data-[state=active]:text-black">
                   <Car className="h-4 w-4 mr-2" />
                   Fleet Management
@@ -599,6 +606,10 @@ const AdminPage = () => {
                 <TabsTrigger value="availability" className="data-[state=active]:bg-luxury-gold data-[state=active]:text-black">
                   <CalendarRange className="h-4 w-4 mr-2" />
                   Car Availability
+                </TabsTrigger>
+                <TabsTrigger value="renters" className="data-[state=active]:bg-luxury-gold data-[state=active]:text-black">
+                  <Users className="h-4 w-4 mr-2" />
+                  Car Renters
                 </TabsTrigger>
               </TabsList>
               
@@ -789,7 +800,11 @@ const AdminPage = () => {
                               className={`flex items-center border ${selectedCarId === car.id ? 
                                 'border-luxury-gold bg-luxury-gold/10' : 'border-white/10'} 
                                 rounded-md p-3 cursor-pointer hover:bg-luxury-gold/5 transition-colors`}
-                              onClick={() => handleSelectCar(car.id)}
+                              onClick={() => {
+                                setSelectedCarId(car.id);
+                                const carDates = getAvailableDatesForCar(car.id);
+                                setSelectedDates(carDates);
+                              }}
                             >
                               <div className="w-12 h-10 rounded overflow-hidden mr-3">
                                 <img 
@@ -836,19 +851,39 @@ const AdminPage = () => {
                                     )
                                   );
                                   if (newDates.length > 0) {
-                                    handleDateSelect(newDates[0]);
+                                    if (selectedCarId) {
+                                      toggleDateAvailability(selectedCarId, newDates[0]);
+                                      setSelectedDates(getAvailableDatesForCar(selectedCarId));
+                                      
+                                      toast({
+                                        title: "Availability updated",
+                                        description: `Date availability has been updated for this car`
+                                      });
+                                    }
                                   } else {
                                     const removedDates = selectedDates.filter(
                                       sd => !date.some(
                                         d => d.getTime() === sd.getTime()
                                       )
                                     );
-                                    if (removedDates.length > 0) {
-                                      handleDateSelect(removedDates[0]);
+                                    if (removedDates.length > 0 && selectedCarId) {
+                                      toggleDateAvailability(selectedCarId, removedDates[0]);
+                                      setSelectedDates(getAvailableDatesForCar(selectedCarId));
+                                      
+                                      toast({
+                                        title: "Availability updated",
+                                        description: `Date availability has been updated for this car`
+                                      });
                                     }
                                   }
-                                } else if (date instanceof Date) {
-                                  handleDateSelect(date);
+                                } else if (date instanceof Date && selectedCarId) {
+                                  toggleDateAvailability(selectedCarId, date);
+                                  setSelectedDates(getAvailableDatesForCar(selectedCarId));
+                                  
+                                  toast({
+                                    title: "Availability updated",
+                                    description: `Date availability has been updated for this car`
+                                  });
                                 }
                               }}
                               className="bg-white border rounded-lg"
@@ -879,6 +914,10 @@ const AdminPage = () => {
                     </div>
                   </div>
                 </div>
+              </TabsContent>
+              
+              <TabsContent value="renters">
+                <CarRenterManagement />
               </TabsContent>
             </Tabs>
           </div>

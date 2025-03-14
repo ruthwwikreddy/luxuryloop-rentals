@@ -4,69 +4,11 @@ import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Phone, Mail, MapPin, Star, Filter, Search, ChevronDown, User, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-// Sample renter data
-const RENTERS = [
-  {
-    id: 1,
-    name: "Luxury Cars Mumbai",
-    rating: 4.9,
-    reviewCount: 128,
-    phone: "+91 9876543210",
-    email: "info@luxurycarsmumbai.com",
-    address: "Worli, Mumbai, Maharashtra",
-    description: "Premium luxury car rental service in Mumbai with 10+ years of experience in providing exotic and luxury cars for special occasions, business events, and tourism.",
-    specialties: ["Wedding Cars", "Corporate Rentals", "Airport Transfers"],
-    verification: "Identity Verified",
-    memberSince: "2015",
-    featuredCars: ["Lamborghini Aventador", "Rolls-Royce Phantom", "Ferrari 488 Spider"]
-  },
-  {
-    id: 2,
-    name: "Delhi Exotic Rentals",
-    rating: 4.7,
-    reviewCount: 94,
-    phone: "+91 9876543211",
-    email: "bookings@delhiexotic.com",
-    address: "Connaught Place, New Delhi",
-    description: "Exclusive luxury car rental service in Delhi NCR providing chauffeur-driven and self-drive options for luxury cars, SUVs, and sports cars.",
-    specialties: ["Self-Drive Options", "Chauffeur Services", "Long-term Rentals"],
-    verification: "Business Verified",
-    memberSince: "2017",
-    featuredCars: ["Bentley Continental GT", "Range Rover Autobiography", "Mercedes-AMG GT"]
-  },
-  {
-    id: 3,
-    name: "Bangalore Luxury Rides",
-    rating: 4.8,
-    reviewCount: 76,
-    phone: "+91 9876543212",
-    email: "support@blrluxury.com",
-    address: "Indiranagar, Bangalore, Karnataka",
-    description: "Tech-forward luxury car rental service with instant booking, keyless entry, and comprehensive insurance coverage for hassle-free luxury driving experiences.",
-    specialties: ["Tech Startups Events", "Airport Pickups", "Weekend Getaways"],
-    verification: "Identity & Business Verified",
-    memberSince: "2019",
-    featuredCars: ["Porsche 911 Turbo S", "Aston Martin DBS", "Ferrari 488 Spider"]
-  },
-  {
-    id: 4,
-    name: "Royal Rajasthan Cars",
-    rating: 4.6,
-    reviewCount: 52,
-    phone: "+91 9876543213",
-    email: "booking@royalrajasthancars.com",
-    address: "Civil Lines, Jaipur, Rajasthan",
-    description: "Specialized in providing luxury cars for destination weddings, palace events, and tourism in Rajasthan. Experience royalty with our premium fleet.",
-    specialties: ["Palace Wedding Transport", "Tourist Packages", "Film Shoots"],
-    verification: "Identity Verified",
-    memberSince: "2018",
-    featuredCars: ["Rolls-Royce Phantom", "Range Rover Autobiography", "Mercedes-Benz S-Class"]
-  }
-];
+import { useCarRenters, CarRenterType } from "@/hooks/use-car-renters";
 
 const RentersPage = () => {
   const { toast } = useToast();
+  const { carRenters, loading } = useCarRenters();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeRenter, setActiveRenter] = useState<number | null>(null);
   const [showContactForm, setShowContactForm] = useState(false);
@@ -81,9 +23,9 @@ const RentersPage = () => {
     }
   });
   
-  const filteredRenters = RENTERS.filter(renter => 
+  const filteredRenters = carRenters.filter(renter => 
     renter.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    renter.address.toLowerCase().includes(searchQuery.toLowerCase())
+    (renter.address && renter.address.toLowerCase().includes(searchQuery.toLowerCase()))
   );
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -161,7 +103,59 @@ const RentersPage = () => {
           </div>
           
           <div className="grid grid-cols-1 gap-6">
-            {filteredRenters.length > 0 ? (
+            {loading ? (
+              // Loading skeletons
+              Array(3).fill(0).map((_, index) => (
+                <div key={index} className="glass-card rounded-lg gold-border overflow-hidden">
+                  <div className="p-6">
+                    <div className="flex flex-col md:flex-row gap-6">
+                      <div className="md:w-2/3 space-y-4">
+                        <div className="flex items-start justify-between">
+                          <div className="h-8 w-48 bg-luxury-gold/10 rounded animate-pulse"></div>
+                          <div className="h-8 w-24 bg-luxury-gold/10 rounded animate-pulse"></div>
+                        </div>
+                        <div className="flex flex-wrap gap-4">
+                          <div className="h-6 w-36 bg-luxury-gold/10 rounded animate-pulse"></div>
+                          <div className="h-6 w-36 bg-luxury-gold/10 rounded animate-pulse"></div>
+                        </div>
+                        <div className="h-24 bg-luxury-gold/10 rounded animate-pulse"></div>
+                        <div className="space-y-2">
+                          <div className="h-6 w-28 bg-luxury-gold/10 rounded animate-pulse"></div>
+                          <div className="flex flex-wrap gap-2">
+                            {Array(3).fill(0).map((_, i) => (
+                              <div key={i} className="h-8 w-28 bg-luxury-gold/10 rounded-full animate-pulse"></div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="md:w-1/3 glass-card rounded-lg p-6 bg-luxury-black/50 space-y-4">
+                        <div className="h-6 w-36 bg-luxury-gold/10 rounded animate-pulse"></div>
+                        <div className="space-y-4">
+                          <div className="flex items-center">
+                            <div className="h-10 w-10 rounded-full bg-luxury-gold/10 mr-4"></div>
+                            <div className="space-y-2">
+                              <div className="h-4 w-16 bg-luxury-gold/10 rounded animate-pulse"></div>
+                              <div className="h-6 w-32 bg-luxury-gold/10 rounded animate-pulse"></div>
+                            </div>
+                          </div>
+                          <div className="flex items-center">
+                            <div className="h-10 w-10 rounded-full bg-luxury-gold/10 mr-4"></div>
+                            <div className="space-y-2">
+                              <div className="h-4 w-16 bg-luxury-gold/10 rounded animate-pulse"></div>
+                              <div className="h-6 w-40 bg-luxury-gold/10 rounded animate-pulse"></div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="h-10 w-full bg-luxury-gold/10 rounded animate-pulse"></div>
+                          <div className="h-10 w-full bg-luxury-gold/10 rounded animate-pulse"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : filteredRenters.length > 0 ? (
               filteredRenters.map((renter) => (
                 <div key={renter.id} className="glass-card rounded-lg gold-border overflow-hidden hover:gold-glow transition-all duration-300">
                   <div className="p-6">
@@ -169,78 +163,94 @@ const RentersPage = () => {
                       <div className="md:w-2/3">
                         <div className="flex items-start justify-between mb-4">
                           <h2 className="font-playfair text-2xl font-bold text-white">{renter.name}</h2>
-                          <div className="flex items-center bg-luxury-gold/10 px-3 py-1 rounded-full">
-                            <Star className="h-4 w-4 text-luxury-gold fill-luxury-gold mr-1" />
-                            <span className="text-white font-medium">{renter.rating}</span>
-                            <span className="text-white/50 text-sm ml-1">({renter.reviewCount})</span>
-                          </div>
+                          {renter.rating && (
+                            <div className="flex items-center bg-luxury-gold/10 px-3 py-1 rounded-full">
+                              <Star className="h-4 w-4 text-luxury-gold fill-luxury-gold mr-1" />
+                              <span className="text-white font-medium">{renter.rating}</span>
+                              <span className="text-white/50 text-sm ml-1">({renter.review_count || 0})</span>
+                            </div>
+                          )}
                         </div>
                         
                         <div className="flex flex-wrap items-center gap-4 mb-4">
-                          <div className="flex items-center">
-                            <MapPin className="h-4 w-4 text-luxury-gold mr-1" />
-                            <span className="text-white/70">{renter.address}</span>
-                          </div>
-                          <div className="flex items-center">
-                            <User className="h-4 w-4 text-luxury-gold mr-1" />
-                            <span className="text-white/70">{renter.verification}</span>
-                          </div>
-                          <div className="flex items-center">
-                            <Calendar className="h-4 w-4 text-luxury-gold mr-1" />
-                            <span className="text-white/70">Member since {renter.memberSince}</span>
-                          </div>
+                          {renter.address && (
+                            <div className="flex items-center">
+                              <MapPin className="h-4 w-4 text-luxury-gold mr-1" />
+                              <span className="text-white/70">{renter.address}</span>
+                            </div>
+                          )}
+                          {renter.verification && (
+                            <div className="flex items-center">
+                              <User className="h-4 w-4 text-luxury-gold mr-1" />
+                              <span className="text-white/70">{renter.verification}</span>
+                            </div>
+                          )}
+                          {renter.member_since && (
+                            <div className="flex items-center">
+                              <Calendar className="h-4 w-4 text-luxury-gold mr-1" />
+                              <span className="text-white/70">Member since {renter.member_since}</span>
+                            </div>
+                          )}
                         </div>
                         
                         <p className="text-white/70 mb-4">
-                          {renter.description}
+                          {renter.description || "No description available."}
                         </p>
                         
-                        <div className="mb-4">
-                          <h3 className="text-white text-lg mb-2">Specialties</h3>
-                          <div className="flex flex-wrap gap-2">
-                            {renter.specialties.map((specialty, index) => (
-                              <span key={index} className="bg-luxury-gold/10 text-white/90 px-3 py-1 rounded-full text-sm">
-                                {specialty}
-                              </span>
-                            ))}
+                        {renter.specialties && renter.specialties.length > 0 && (
+                          <div className="mb-4">
+                            <h3 className="text-white text-lg mb-2">Specialties</h3>
+                            <div className="flex flex-wrap gap-2">
+                              {renter.specialties.map((specialty, index) => (
+                                <span key={index} className="bg-luxury-gold/10 text-white/90 px-3 py-1 rounded-full text-sm">
+                                  {specialty}
+                                </span>
+                              ))}
+                            </div>
                           </div>
-                        </div>
+                        )}
                         
-                        <div className="mb-4">
-                          <h3 className="text-white text-lg mb-2">Featured Cars</h3>
-                          <div className="flex flex-wrap gap-2">
-                            {renter.featuredCars.map((car, index) => (
-                              <span key={index} className="bg-luxury-black text-white/90 border border-luxury-gold/20 px-3 py-1 rounded-full text-sm">
-                                {car}
-                              </span>
-                            ))}
+                        {renter.featured_cars && renter.featured_cars.length > 0 && (
+                          <div className="mb-4">
+                            <h3 className="text-white text-lg mb-2">Featured Cars</h3>
+                            <div className="flex flex-wrap gap-2">
+                              {renter.featured_cars.map((car, index) => (
+                                <span key={index} className="bg-luxury-black text-white/90 border border-luxury-gold/20 px-3 py-1 rounded-full text-sm">
+                                  {car}
+                                </span>
+                              ))}
+                            </div>
                           </div>
-                        </div>
+                        )}
                       </div>
                       
                       <div className="md:w-1/3 glass-card rounded-lg p-6 bg-luxury-black/50">
                         <h3 className="text-white text-lg font-medium mb-4">Contact Information</h3>
                         
                         <div className="space-y-4 mb-6">
-                          <div className="flex items-center hover-lift">
-                            <div className="h-10 w-10 rounded-full bg-luxury-gold/10 flex items-center justify-center mr-4">
-                              <Phone className="h-5 w-5 text-luxury-gold" />
+                          {renter.phone && (
+                            <div className="flex items-center hover-lift">
+                              <div className="h-10 w-10 rounded-full bg-luxury-gold/10 flex items-center justify-center mr-4">
+                                <Phone className="h-5 w-5 text-luxury-gold" />
+                              </div>
+                              <div>
+                                <p className="text-white text-sm">Phone</p>
+                                <p className="text-luxury-gold">{renter.phone}</p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="text-white text-sm">Phone</p>
-                              <p className="text-luxury-gold">{renter.phone}</p>
-                            </div>
-                          </div>
+                          )}
                           
-                          <div className="flex items-center hover-lift">
-                            <div className="h-10 w-10 rounded-full bg-luxury-gold/10 flex items-center justify-center mr-4">
-                              <Mail className="h-5 w-5 text-luxury-gold" />
+                          {renter.email && (
+                            <div className="flex items-center hover-lift">
+                              <div className="h-10 w-10 rounded-full bg-luxury-gold/10 flex items-center justify-center mr-4">
+                                <Mail className="h-5 w-5 text-luxury-gold" />
+                              </div>
+                              <div>
+                                <p className="text-white text-sm">Email</p>
+                                <p className="text-luxury-gold">{renter.email}</p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="text-white text-sm">Email</p>
-                              <p className="text-luxury-gold">{renter.email}</p>
-                            </div>
-                          </div>
+                          )}
                         </div>
                         
                         <div className="space-y-2">
