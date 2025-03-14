@@ -11,7 +11,6 @@ import { CarType } from "@/types/supabase";
 const CarDetailsPage = () => {
   const { id } = useParams();
   const [car, setCar] = useState<CarType | null>(null);
-  const [availableDates, setAvailableDates] = useState<Date[]>([]);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isBooking, setIsBooking] = useState(false);
   const [pickupDate, setPickupDate] = useState("");
@@ -33,18 +32,9 @@ const CarDetailsPage = () => {
         fetchCarDetails();
       })
       .subscribe();
-      
-    // Subscribe to real-time changes for available dates
-    const availabilityChannel = supabase
-      .channel('availability-updates')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'available_dates', filter: `car_id=eq.${id}` }, () => {
-        fetchAvailableDates();
-      })
-      .subscribe();
     
     return () => {
       supabase.removeChannel(carChannel);
-      supabase.removeChannel(availabilityChannel);
     };
   }, [id]);
   
@@ -63,7 +53,6 @@ const CarDetailsPage = () => {
       
       if (data) {
         setCar(data);
-        fetchAvailableDates();
       } else {
         // Redirect to 404 page if car not found
         window.location.href = "/not-found";
@@ -77,24 +66,6 @@ const CarDetailsPage = () => {
       });
     } finally {
       setLoading(false);
-    }
-  };
-  
-  const fetchAvailableDates = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('available_dates')
-        .select('date')
-        .eq('car_id', id);
-        
-      if (error) {
-        throw error;
-      }
-      
-      const dates = data.map(item => new Date(item.date));
-      setAvailableDates(dates);
-    } catch (error) {
-      console.error('Error fetching available dates:', error);
     }
   };
   
@@ -118,7 +89,7 @@ const CarDetailsPage = () => {
       return;
     }
     
-    // Check if selected dates are available
+    // Check basic date validation
     const startDate = new Date(pickupDate);
     const endDate = new Date(returnDate);
     
@@ -131,17 +102,15 @@ const CarDetailsPage = () => {
       return;
     }
     
-    // Simple validation of dates against available dates
-    const isAvailable = availableDates.some(date => 
-      date.toISOString().split('T')[0] === pickupDate ||
-      date.toISOString().split('T')[0] === returnDate
-    );
+    // Check if selected dates are in the past
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     
-    if (!isAvailable) {
+    if (startDate < today) {
       toast({
         variant: "destructive",
-        title: "Date not available",
-        description: "Please select from available dates only.",
+        title: "Invalid pickup date",
+        description: "Pickup date cannot be in the past.",
       });
       return;
     }
