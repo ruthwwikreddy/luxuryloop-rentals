@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Calendar } from "@/components/ui/calendar";
@@ -18,7 +18,6 @@ const BookingProcess = ({ car }: BookingProcessProps) => {
   const { toast } = useToast();
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
-  const [availableDates, setAvailableDates] = useState<Date[]>([]);
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
@@ -29,44 +28,6 @@ const BookingProcess = ({ car }: BookingProcessProps) => {
   });
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
   const [selectionType, setSelectionType] = useState<'start' | 'end'>('start');
-  
-  useEffect(() => {
-    const fetchAvailableDates = async () => {
-      try {
-        setLoading(true);
-        const { data, error } = await supabase
-          .from('available_dates')
-          .select('date')
-          .eq('car_id', car.id);
-        
-        if (error) {
-          throw error;
-        }
-        
-        const dates = (data || []).map(item => new Date(item.date));
-        setAvailableDates(dates);
-      } catch (error) {
-        console.error('Error fetching available dates:', error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Could not fetch available dates for this car"
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchAvailableDates();
-  }, [car.id, toast]);
-  
-  const isDateAvailable = (date: Date) => {
-    return availableDates.some(availableDate => 
-      availableDate.getFullYear() === date.getFullYear() &&
-      availableDate.getMonth() === date.getMonth() &&
-      availableDate.getDate() === date.getDate()
-    );
-  };
   
   const isDateInRange = (date: Date) => {
     if (!startDate || !endDate) return false;
@@ -118,29 +79,9 @@ const BookingProcess = ({ car }: BookingProcessProps) => {
     try {
       setLoading(true);
       
-      // Check if dates are still available
+      // Format dates
       const startDateStr = format(startDate, 'yyyy-MM-dd');
       const endDateStr = format(endDate, 'yyyy-MM-dd');
-      
-      const { data: existingBookings, error: checkError } = await supabase
-        .from('bookings')
-        .select('id')
-        .eq('car_id', car.id)
-        .or(`start_date.eq.${startDateStr},end_date.eq.${endDateStr}`);
-      
-      if (checkError) {
-        throw checkError;
-      }
-      
-      if (existingBookings && existingBookings.length > 0) {
-        toast({
-          variant: "destructive",
-          title: "Dates no longer available",
-          description: "Someone just booked these dates. Please select different dates."
-        });
-        setStep(1);
-        return;
-      }
       
       // Insert booking
       const { error } = await supabase
@@ -187,7 +128,7 @@ const BookingProcess = ({ car }: BookingProcessProps) => {
           <div className="space-y-4">
             <div className="text-center mb-4">
               <h3 className="font-playfair text-2xl text-white mb-2">Select Rental Dates</h3>
-              <p className="text-white/70">Choose your preferred rental dates from the available calendar</p>
+              <p className="text-white/70">Choose your preferred rental dates</p>
             </div>
             
             <div className="flex flex-col space-y-4">
@@ -225,8 +166,7 @@ const BookingProcess = ({ car }: BookingProcessProps) => {
                       onSelect={handleDateSelect}
                       className="rounded-md border"
                       disabled={[
-                        { before: new Date() },
-                        (date) => !isDateAvailable(date)
+                        { before: new Date() }
                       ]}
                       modifiers={{
                         selected: (date) => isDateInRange(date),
@@ -239,16 +179,6 @@ const BookingProcess = ({ car }: BookingProcessProps) => {
                         range_end: "rounded-r-md bg-luxury-gold text-black"
                       }}
                     />
-                    <div className="p-2 flex justify-between text-sm">
-                      <div className="flex items-center">
-                        <div className="h-3 w-3 rounded-full bg-luxury-gold mr-1"></div>
-                        <span>Available</span>
-                      </div>
-                      <div className="flex items-center">
-                        <div className="h-3 w-3 rounded-full bg-gray-200 mr-1"></div>
-                        <span>Unavailable</span>
-                      </div>
-                    </div>
                   </div>
                 )}
               </div>
@@ -484,10 +414,10 @@ const BookingProcess = ({ car }: BookingProcessProps) => {
         </div>
       </div>
       
-      {loading && step === 1 ? (
+      {loading && step === 3 ? (
         <div className="text-center py-12">
           <Loader2 className="h-8 w-8 animate-spin mx-auto text-luxury-gold mb-4" />
-          <p className="text-white">Loading available dates...</p>
+          <p className="text-white">Processing your booking...</p>
         </div>
       ) : (
         renderStep()

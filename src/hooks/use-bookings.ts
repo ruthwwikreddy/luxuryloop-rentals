@@ -21,7 +21,13 @@ export const useBookings = () => {
         throw error;
       }
 
-      setBookings(data || []);
+      // Cast status to the expected type
+      const typedData = (data || []).map(booking => ({
+        ...booking,
+        status: booking.status as "pending" | "approved" | "rejected"
+      }));
+
+      setBookings(typedData);
     } catch (error) {
       console.error('Error fetching bookings:', error);
       toast({
@@ -64,8 +70,14 @@ export const useBookings = () => {
         throw error;
       }
 
+      // Cast the status to ensure it matches the expected type
+      const typedData = {
+        ...data,
+        status: data.status as "pending" | "approved" | "rejected"
+      };
+
       setBookings(prevBookings => 
-        prevBookings.map(booking => booking.id === id ? data : booking)
+        prevBookings.map(booking => booking.id === id ? typedData : booking)
       );
       
       toast({
@@ -73,7 +85,7 @@ export const useBookings = () => {
         description: `Booking status updated to ${status}`,
       });
       
-      return data;
+      return typedData;
     } catch (error) {
       console.error('Error updating booking status:', error);
       toast({
@@ -129,14 +141,20 @@ export const useBookings = () => {
         throw error;
       }
 
-      setBookings(prevBookings => [data, ...prevBookings]);
+      // Cast the status to ensure it matches the expected type
+      const typedData = {
+        ...data,
+        status: data.status as "pending" | "approved" | "rejected"
+      };
+
+      setBookings(prevBookings => [typedData, ...prevBookings]);
       
       toast({
         title: "Booking Created",
         description: "New booking has been successfully created."
       });
       
-      return data;
+      return typedData;
     } catch (error) {
       console.error('Error adding booking:', error);
       toast({

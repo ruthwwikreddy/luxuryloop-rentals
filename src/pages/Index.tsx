@@ -10,6 +10,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { CarType } from "@/types/supabase";
 import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 
 const Index = () => {
   const [featuredCar, setFeaturedCar] = useState<CarType | null>(null);
@@ -52,7 +53,18 @@ const Index = () => {
       <HeroSection />
       <WhyChooseUs />
       <ExclusiveFleet />
-      {featuredCar && <BookingProcess car={featuredCar} />}
+      {loading ? (
+        <div className="glass-card p-6 rounded-lg text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-luxury-gold mb-4" />
+          <p className="text-white">Loading booking options...</p>
+        </div>
+      ) : featuredCar ? (
+        <BookingProcess car={featuredCar} />
+      ) : (
+        <div className="glass-card p-6 rounded-lg text-center">
+          <p className="text-white">No vehicles available for booking at this time.</p>
+        </div>
+      )}
       <PartnerSection />
       <ContactSection />
     </Layout>
